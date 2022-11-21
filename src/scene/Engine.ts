@@ -37,19 +37,18 @@ export class Engine {
   public readonly scene = new Scene();
   public readonly camera: PerspectiveCamera;
   public readonly renderer: WebGLRenderer;
-  // public readonly pool = new ResourcePool();
   public readonly viewPosition = new Vector3();
   public viewAngle = 0;
   public readonly events = new EventBus<{ update: number }>();
+  public readonly sunlight: DirectionalLight;
 
   private mount: HTMLElement | undefined;
   private frameId: number | null = null;
   private clock = new Clock();
-  private sunlight: DirectionalLight;
-  // private terrain: TerrainShape[] = [];
   // private physicsWorld?: World;
   private sphere: Mesh;
   private stars: Stars;
+  private earth: Planet;
 
   // private sphereBody?: RigidBody;
 
@@ -73,25 +72,28 @@ export class Engine {
     this.sphere.castShadow = true;
     group.add(this.sphere);
 
-    const earth = new Planet(6_378_100, {
+    this.earth = new Planet(6_378_100, {
       oblateness: 0.00335,
       texture: earthTexture,
-      atmosphereThickness: 200,
+      atmosphereThickness: 500_000,
+      atmosphereColor: new Color(0.5, 0.5, 1.0),
+      atmosphereOpacity: 0.3,
     });
-    earth.addToScene(group);
+    this.earth.addToScene(group);
 
     const moon = new Planet(1_079_600, {
       oblateness: 0.00648,
       texture: moonTexture,
-      atmosphereThickness: 200,
     });
     moon.group.position.x = 384_000_000;
-    moon.setParent(earth);
+    moon.setParent(this.earth);
 
     const mars = new Planet(4_212_300, {
       oblateness: 0.00648,
       texture: marsTexture,
-      atmosphereThickness: 200,
+      atmosphereThickness: 200_000,
+      atmosphereColor: new Color(1.0, 0.7, 0.7),
+      atmosphereOpacity: 0.2,
     });
     mars.group.position.x = -60_378_100;
     mars.addToScene(group);
@@ -169,6 +171,8 @@ export class Engine {
   public updateScene(deltaTime: number) {
     // Run callbacks.
     this.events.emit('update', deltaTime);
+
+    this.earth.update(deltaTime);
     // Run physics
     // this.physicsWorld?.step();
     // const t = this.sphereBody!.translation();
@@ -259,4 +263,8 @@ let engine: Engine;
 
 export function getEngine(): Engine {
   return engine;
+}
+
+if (import.meta.hot) {
+  import.meta.hot.decline();
 }

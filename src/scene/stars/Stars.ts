@@ -35,7 +35,6 @@ export class Stars {
     this.mesh.castShadow = false;
     this.mesh.position.set(0, 0, 0);
     this.mesh.updateMatrix();
-    // this.mesh.renderOrder = -10;
 
     const loader = new TextureLoader();
     const texture = loader.load(star);

@@ -1,11 +1,9 @@
 # TODO
 
-* Test deployment.
-* Earth light on moon
-* Rotate earth
+* Earthshine on moon
+* Sun in proper position.
 * Planet orbit paths.
 * Sunlight on earth
-* Atmopheric halo.
 * Planetary Day Length / Offset
 * Planet LoD
 * Jupiter

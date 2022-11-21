@@ -2,13 +2,17 @@ import {
   BufferGeometry,
   Color,
   Group,
+  Material,
   Mesh,
   MeshStandardMaterial,
   Object3D,
   SphereGeometry,
   TextureLoader,
+  Vector3,
 } from 'three';
 import { invariant } from '../../../lib/invariant';
+import { getEngine } from '../../Engine';
+import { AtmosphereHaloMaterial } from './AtmosphereHaloMaterial';
 
 const WIDTH_SEGMENTS = 96;
 const HEIGHT_SEGMENTS = 48;
@@ -16,17 +20,24 @@ const HEIGHT_SEGMENTS = 48;
 interface IPlanetOptions {
   oblateness?: number;
   texture?: string;
+  roughnessTexture?: string;
   atmosphereThickness?: number;
-  atmosphhereColor?: Color;
+  atmosphereColor?: Color;
+  atmosphereOpacity?: number;
 }
 
 const loader = new TextureLoader();
+
+const axis = new Vector3(0, 1, 0);
 
 export class Planet {
   public mesh: Mesh<BufferGeometry, MeshStandardMaterial>;
   public geometry: BufferGeometry;
   public material: MeshStandardMaterial;
   public group = new Group();
+  private atmoMesh?: Mesh<BufferGeometry, Material>;
+  private atmoMaterial?: AtmosphereHaloMaterial;
+  private timeOfDay = 0;
 
   // Need:
   // axis direction
@@ -48,6 +59,16 @@ export class Planet {
     this.mesh = new Mesh(this.geometry, this.material);
     this.mesh.castShadow = true;
     this.group.add(this.mesh);
+
+    if (options.atmosphereThickness) {
+      this.atmoMaterial = new AtmosphereHaloMaterial({
+        color: options.atmosphereColor ?? new Color(1.0, 1.0, 1.0),
+        thickness: options.atmosphereThickness / radius,
+        opacity: options.atmosphereOpacity ?? 1,
+      });
+      this.atmoMesh = new Mesh(this.geometry, this.atmoMaterial);
+      this.group.add(this.atmoMesh);
+    }
   }
 
   public addToScene(scene: Object3D): this {
@@ -71,4 +92,18 @@ export class Planet {
   public setRotationSpeed(): this {
     return this;
   }
+
+  public update(delta: number) {
+    this.timeOfDay += delta;
+    this.mesh.rotateOnAxis(axis, delta);
+    if (this.atmoMaterial) {
+      const engine = getEngine();
+      v.copy(engine.sunlight.target.position);
+      v.sub(engine.sunlight.position);
+      v.normalize()
+      this.atmoMaterial.setSunlight(v);
+    }
+  }
 }
+
+const v = new Vector3();
