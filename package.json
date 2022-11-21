@@ -1,5 +1,5 @@
 {
-  "name": "burn",
+  "name": "@viridia/odyssey",
   "version": "0.0.1",
   "description": "Rocket flight simulator",
   "type": "module",
