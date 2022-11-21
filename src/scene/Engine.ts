@@ -25,7 +25,10 @@ import {
 import { EventBus } from '../lib/EventBus';
 import { Stars } from './stars/Stars';
 // import { getRapier } from './physics/rapier';
-// import { TerrainShape } from './terrain/TerrainShape';
+import earthTexture from './planets/textures/earth.jpeg';
+import marsTexture from './planets/textures/mars.jpeg';
+import moonTexture from './planets/textures/moon.jpeg';
+import { Planet } from './planets/textures/Planet';
 
 const cameraOffset = new Vector3();
 
@@ -54,7 +57,7 @@ export class Engine {
     engine = this;
 
     this.animate = this.animate.bind(this);
-    this.camera = new PerspectiveCamera(40, 1, 1, 10_000_000);
+    this.camera = new PerspectiveCamera(40, 1, 10, 10_000_000_000);
     // this.camera.up.set(0, 0, 1);
 
     this.sunlight = this.createSunlight();
@@ -70,10 +73,28 @@ export class Engine {
     this.sphere.castShadow = true;
     group.add(this.sphere);
 
-    this.sphere = new Mesh(geometry, material);
-    this.sphere.castShadow = true;
-    this.sphere.position.x = 3;
-    group.add(this.sphere);
+    const earth = new Planet(6_378_100, {
+      oblateness: 0.00335,
+      texture: earthTexture,
+      atmosphereThickness: 200,
+    });
+    earth.addToScene(group);
+
+    const moon = new Planet(1_079_600, {
+      oblateness: 0.00648,
+      texture: moonTexture,
+      atmosphereThickness: 200,
+    });
+    moon.group.position.x = 384_000_000;
+    moon.setParent(earth);
+
+    const mars = new Planet(4_212_300, {
+      oblateness: 0.00648,
+      texture: marsTexture,
+      atmosphereThickness: 200,
+    });
+    mars.group.position.x = -60_378_100;
+    mars.addToScene(group);
 
     this.stars = new Stars(group);
 
@@ -81,17 +102,7 @@ export class Engine {
     helper.position.set(6, 0, 0);
     group.add(helper);
 
-    // Generate some terrain patches.
-    // for (let y = -32; y < 32; y += 16) {
-    //   for (let x = -32; x < 32; x += 16) {
-    //     const terrain = new TerrainShape(new Vector3(x, 0, y));
-    //     terrain.addToScene(this.scene);
-    //     this.terrain.push(terrain);
-    //     this.pool.add(terrain);
-    //   }
-    // }
-
-    cameraOffset.setFromSphericalCoords(20, MathUtils.degToRad(75), this.viewAngle);
+    cameraOffset.setFromSphericalCoords(30_000_000, MathUtils.degToRad(75), this.viewAngle);
     this.camera.position.copy(this.viewPosition).add(cameraOffset);
     this.camera.lookAt(this.viewPosition);
     this.camera.updateMatrixWorld();

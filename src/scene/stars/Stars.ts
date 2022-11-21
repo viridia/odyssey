@@ -75,6 +75,7 @@ export class Stars {
     paramsAttr.count = numStars;
     this.geometry.setAttribute('params', paramsAttr);
 
+    let count = 0;
     for (let i = 0; i < numStars; i++) {
       const [ra, dec, spectral, mag] = json[i];
 
@@ -89,11 +90,10 @@ export class Stars {
         color -= subtype / 100;
       }
 
-      paramsAttr.setXYZW(i, ra, dec, mag, color);
+      paramsAttr.setXYZW(count++, ra, dec, mag, color);
     }
     paramsAttr.needsUpdate = true;
-
-    this.geometry.instanceCount = numStars;
+    this.geometry.instanceCount = count;
   }
 
   public start() {

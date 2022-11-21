@@ -38,8 +38,8 @@ void main() {
   // To convert earth-based coords to heliocentric use mesh transform.
   vec4 starPosition = vec4(
     DIST * cos(dec) * cos(ra),
-    DIST * cos(dec) * sin(ra),
     DIST * sin(dec),
+    DIST * cos(dec) * -sin(ra),
     1.
   );
 

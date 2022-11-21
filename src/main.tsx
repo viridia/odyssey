@@ -21,7 +21,7 @@ function Main() {
       orbitControls.dampingFactor = 0.05;
       orbitControls.screenSpacePanning = false;
       orbitControls.minDistance = 20;
-      orbitControls.maxDistance = 10000;
+      orbitControls.maxDistance = 1000_000_000;
       orbitControls.maxPolarAngle = Math.PI;
       orbitControls.minPolarAngle = -Math.PI;
 
