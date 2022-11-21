@@ -78,6 +78,9 @@ export class Engine {
       atmosphereThickness: 500_000,
       atmosphereColor: new Color(0.5, 0.5, 1.0),
       atmosphereOpacity: 0.3,
+      luminosity: 0.5,
+      luminousColor: new Color(0.5, 0.5, 1.0),
+      luminousDistance: 1000_000_000,
     });
     this.earth.addToScene(group);
 

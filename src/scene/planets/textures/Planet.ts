@@ -6,6 +6,7 @@ import {
   Mesh,
   MeshStandardMaterial,
   Object3D,
+  PointLight,
   SphereGeometry,
   TextureLoader,
   Vector3,
@@ -24,6 +25,9 @@ interface IPlanetOptions {
   atmosphereThickness?: number;
   atmosphereColor?: Color;
   atmosphereOpacity?: number;
+  luminosity?: number;
+  luminousColor?: Color;
+  luminousDistance?: number;
 }
 
 const loader = new TextureLoader();
@@ -69,6 +73,15 @@ export class Planet {
       this.atmoMesh = new Mesh(this.geometry, this.atmoMaterial);
       this.group.add(this.atmoMesh);
     }
+
+    if (options.luminosity) {
+      const light = new PointLight(
+        options.luminousColor,
+        options.luminosity ?? 1,
+        options.luminousDistance ?? 1_000_000
+      );
+      this.group.add(light);
+    }
   }
 
   public addToScene(scene: Object3D): this {
@@ -100,7 +113,7 @@ export class Planet {
       const engine = getEngine();
       v.copy(engine.sunlight.target.position);
       v.sub(engine.sunlight.position);
-      v.normalize()
+      v.normalize();
       this.atmoMaterial.setSunlight(v);
     }
   }

@@ -1,9 +1,8 @@
 # TODO
 
-* Earthshine on moon
 * Sun in proper position.
-* Planet orbit paths.
 * Sunlight on earth
+* Planet orbit paths.
 * Planetary Day Length / Offset
 * Planet LoD
 * Jupiter
