@@ -1,12 +1,12 @@
 # TODO
 
-* Why do stars blink when I zoom?
-* Sun in proper position.
+* Ellipse math.
+* Masses of the planets and sun.
 * Planet orbit paths.
   * Elliptical
   * Transfer
 * Planetary Day Length / Offset
-* Planet LoD
+* Planet LoDs
 * Jupiter
 * Milky Way
 * Axial Tilt
@@ -31,3 +31,28 @@
 
 * Planet orbit paths: these are LoD'd based on camera distance from planet, they don't show
   when camera is too near the planet.
+
+# Flight path types:
+
+In order to maintain some degree of accuracy, we want to avoid cases where numerical stability
+is an issue.
+
+  * Elliptical:
+    Rep 1:
+      Velocity
+      Position relative to center of mass
+      Mass of primary.
+    Rep 2:
+      Center of ellipse.
+      Major axis.
+      Rotation around major axis.
+  * Hyperbolic
+  * Transfer - a FP between two masses, influenced by both.
+    * Done using integration
+
+
+* Spacecraft:
+  * list
+    * position
+    * velocity
+    * primary

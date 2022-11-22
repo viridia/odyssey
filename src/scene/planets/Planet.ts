@@ -5,6 +5,7 @@ import {
   Group,
   Material,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   PointLight,
   SphereGeometry,
@@ -21,6 +22,7 @@ const WIDTH_SEGMENTS = 96;
 const HEIGHT_SEGMENTS = 48;
 
 interface IPlanetOptions {
+  mass?: number;
   oblateness?: number;
   texture?: string;
   roughnessTexture?: string;
@@ -45,14 +47,21 @@ export class Planet implements IPrimary {
   private atmoMesh?: Mesh<BufferGeometry, Material>;
   private atmoMaterial?: AtmosphereHaloMaterial;
   private sunlightDir = new Vector3();
+  private worldPosition = new Vector3();
   private timeOfDay = 0;
+  private lpMaterial: MeshBasicMaterial;
+  private lpMesh: Mesh<BufferGeometry, MeshBasicMaterial>;
   // private dayLength = 24 * 60 * 60;
   // private yearLength;
 
   // Need:
   // axis direction
 
-  constructor(public readonly name: string, radius: number, options: IPlanetOptions = {}) {
+  constructor(
+    public readonly name: string,
+    public readonly radius: number,
+    options: IPlanetOptions = {}
+  ) {
     this.material = new MeshStandardMaterial({
       map: options.texture ? loader.load(options.texture) : undefined,
     });
@@ -69,7 +78,22 @@ export class Planet implements IPrimary {
     this.mesh = new Mesh(this.geometry, this.material);
     // this.mesh.castShadow = true;
     // this.mesh.visible = false;
+
     this.group.add(this.mesh);
+
+    // Small LOD sphere to display when planet gets very small.
+    const lpSphere = new SphereGeometry(radius, 16, 8);
+    this.lpMaterial = new MeshBasicMaterial({
+      color: options.luminousColor ?? new Color(1, 1, 1),
+      depthWrite: false,
+      depthTest: false,
+      transparent: true,
+      blending: AdditiveBlending,
+    });
+    this.lpMesh = new Mesh(lpSphere, this.lpMaterial);
+    this.lpMesh.visible = false;
+    this.lpMesh.material.opacity = 1;
+    this.group.add(this.lpMesh);
 
     if (options.atmosphereThickness) {
       this.atmoMaterial = new AtmosphereHaloMaterial({
@@ -106,10 +130,10 @@ export class Planet implements IPrimary {
     orbit.updateGeometry(position);
   }
 
-  // public addToScene(scene: Object3D): this {
-  //   scene.add(this.group);
-  //   return this;
-  // }
+  public get position(): Vector3 {
+    this.group.getWorldPosition(this.worldPosition);
+    return this.worldPosition;
+  }
 
   public setPrimary(primary: IPrimary | null = null): this {
     if (primary) {
@@ -134,20 +158,37 @@ export class Planet implements IPrimary {
   }
 
   public update(delta: number) {
+    const engine = getEngine();
     this.timeOfDay += delta;
     this.mesh.rotateOnAxis(axis, delta);
+    this.getWorldPosition(this.worldPosition);
+
+    // Calculate sunlight direction for atmo haze
     if (this.atmoMaterial) {
-      const engine = getEngine();
       engine.planets.sol.group.getWorldPosition(sunPosition);
-      this.getWorldPosition(planetPosition);
-      this.sunlightDir.copy(planetPosition).sub(sunPosition).normalize();
+      this.sunlightDir.copy(this.worldPosition).sub(sunPosition).normalize();
       this.atmoMaterial.setSunlight(this.sunlightDir);
     }
+
+    // Calculate visibility of low-poly sphere
+    const dist = engine.cameraPosition.distanceTo(this.worldPosition);
+    const lodDistance = this.radius * 8000;
+    const distRatio = Math.pow(dist / lodDistance, 0.5);
+    if (distRatio < 1) {
+      this.lpMaterial.opacity = Math.max(0, 1 - (1 - distRatio) * 2);
+      this.lpMesh.visible = this.lpMaterial.opacity > 0;
+      this.mesh.visible = true;
+    } else {
+      this.lpMaterial.opacity = 1 / distRatio;
+      this.lpMesh.visible = true;
+      this.mesh.visible = false;
+    }
+    this.lpMesh.scale.setScalar(dist / lodDistance);
+
     this.satellites.forEach(sat => sat.update(delta));
   }
 }
 
 const sunPosition = new Vector3();
-const planetPosition = new Vector3();
 
 const v = new Vector3();

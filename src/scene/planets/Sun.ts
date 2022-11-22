@@ -8,6 +8,7 @@ import {
   Object3D,
   PointLight,
   SphereGeometry,
+  Vector3,
 } from 'three';
 import { invariant } from '../../lib/invariant';
 import { CoronaHaloMaterial } from './CoronaHaloMaterial';
@@ -17,6 +18,7 @@ const WIDTH_SEGMENTS = 96;
 const HEIGHT_SEGMENTS = 48;
 
 interface IPlanetOptions {
+  mass?: number;
   oblateness?: number;
   // texture?: string;
   roughnessTexture?: string;
@@ -38,8 +40,13 @@ export class Sun implements IPrimary {
   public satellites: ISatellite[] = [];
   private atmoMesh?: Mesh<BufferGeometry, Material>;
   private atmoMaterial?: CoronaHaloMaterial;
+  private worldPosition = new Vector3();
 
-  constructor(public readonly name: string, radius: number, options: IPlanetOptions = {}) {
+  constructor(
+    public readonly name: string,
+    public readonly radius: number,
+    options: IPlanetOptions = {}
+  ) {
     this.material = new MeshBasicMaterial({
       // map: options.texture ? loader.load(options.texture) : undefined,
     });
@@ -76,6 +83,11 @@ export class Sun implements IPrimary {
       );
       this.group.add(light);
     }
+  }
+
+  public get position(): Vector3 {
+    this.group.getWorldPosition(this.worldPosition);
+    return this.worldPosition;
   }
 
   public addToScene(scene: Object3D): this {

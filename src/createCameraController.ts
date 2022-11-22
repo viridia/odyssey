@@ -5,10 +5,6 @@ import { Engine } from './scene/Engine';
 const MIN_CAMERA_DISTANCE = 100;
 const MAX_CAMERA_DISTANCE = 5_000_000_000_000; // A little larger than pluto's orbit
 
-// const rotation = new Quaternion();
-// const YPOS = new Vector3(0, 1, 0);
-// const ZPOS = new Vector3(0, 0, 1);
-
 export const createCameraController = (engine: Engine): JSX.HTMLAttributes<HTMLElement> => {
   let dragging = false;
 

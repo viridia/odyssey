@@ -8,6 +8,8 @@ import moonTexture from './textures/moon.jpeg';
 
 const KM = 1000;
 
+const MEarth = 5.97219e24;
+
 export class Orrery {
   public readonly sol: Sun;
 
@@ -17,6 +19,7 @@ export class Orrery {
 
   constructor() {
     this.sol = new Sun('Sol', 696_340 * KM, {
+      mass: 1.9891e30,
       atmosphereThickness: 10_000_000 * KM,
       atmosphereColor: new Color(1.0, 1.0, 0.7),
       atmosphereOpacity: 1,
@@ -27,6 +30,7 @@ export class Orrery {
     // this.sun.addToScene(group);
 
     this.earth = new Planet('Earth', 6_378 * KM, {
+      mass: MEarth,
       oblateness: 0.00335,
       texture: earthTexture,
       atmosphereThickness: 500_000,
@@ -37,10 +41,10 @@ export class Orrery {
       luminousDistance: 1000_000_000,
     });
     this.earth.group.position.z = -147_770_000 * KM;
-
     this.earth.setPrimary(this.sol);
 
     this.moon = new Planet('Moon', 1_079_600, {
+      mass: 7.34767309e22,
       oblateness: 0.00648,
       texture: moonTexture,
     });
@@ -48,6 +52,7 @@ export class Orrery {
     this.moon.setPrimary(this.earth);
 
     this.mars = new Planet('Mars', 4_212_300, {
+      mass: 0.107 * MEarth,
       oblateness: 0.00648,
       texture: marsTexture,
       atmosphereThickness: 200_000,

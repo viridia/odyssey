@@ -1,5 +1,4 @@
 import { render } from 'solid-js/web';
-// import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Engine } from './scene/Engine';
 import { createEffect, createSignal } from 'solid-js';
 import { createCameraController } from './createCameraController';
