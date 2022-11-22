@@ -1,8 +1,10 @@
 # TODO
 
+* Why do stars blink when I zoom?
 * Sun in proper position.
-* Sunlight on earth
 * Planet orbit paths.
+  * Elliptical
+  * Transfer
 * Planetary Day Length / Offset
 * Planet LoD
 * Jupiter
@@ -14,6 +16,7 @@
 * Local shadow lights
 * Don't let camera be inside planets
 * Better trackball controller.
+  * Limit rotation at poles
 * UI for selecting PoV / Focus object.
 * Rocket Elliptical Orbits.
 * Rocket transfer orbits.

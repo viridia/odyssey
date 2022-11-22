@@ -95,14 +95,9 @@ export class Stars {
     this.geometry.instanceCount = count;
   }
 
-  public start() {
-    const engine = getEngine();
-    engine.events.subscribe('update', this.update.bind(this));
-  }
-
   public update() {
     const engine = getEngine();
-    this.mesh.position.copy(engine.camera.position);
+    this.mesh.position.copy(engine.cameraPosition);
   }
 }
 

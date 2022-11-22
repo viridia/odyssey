@@ -9,15 +9,10 @@ import {
   AxesHelper,
   Clock,
   Color,
-  DirectionalLight,
   Group,
   HemisphereLight,
-  MathUtils,
-  Mesh,
-  MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
-  SphereGeometry,
   sRGBEncoding,
   Vector3,
   WebGLRenderer,
@@ -25,30 +20,32 @@ import {
 import { EventBus } from '../lib/EventBus';
 import { Stars } from './stars/Stars';
 // import { getRapier } from './physics/rapier';
-import earthTexture from './planets/textures/earth.jpeg';
-import marsTexture from './planets/textures/mars.jpeg';
-import moonTexture from './planets/textures/moon.jpeg';
-import { Planet } from './planets/textures/Planet';
+import { Orrery } from './planets/Orrery';
+import { Planet } from './planets/Planet';
 
-const cameraOffset = new Vector3();
+// const cameraOffset = new Vector3();
 
 /** Contains the three.js renderer and handles to important resources. */
 export class Engine {
   public readonly scene = new Scene();
   public readonly camera: PerspectiveCamera;
   public readonly renderer: WebGLRenderer;
-  public readonly viewPosition = new Vector3();
-  public viewAngle = 0;
+  public readonly viewCenter = new Vector3();
+  public cameraElevationAngle = Math.PI * 0.05;
+  public cameraAzimuthAngle = 0;
+  public readonly cameraPosition = new Vector3();
+  public cameraDistance = 30_000_000;
+  // public viewAngle = 0;
   public readonly events = new EventBus<{ update: number }>();
-  public readonly sunlight: DirectionalLight;
+  public readonly planets: Orrery;
+  public viewTarget: Planet | null = null;
 
   private mount: HTMLElement | undefined;
   private frameId: number | null = null;
   private clock = new Clock();
   // private physicsWorld?: World;
-  private sphere: Mesh;
+  private rootGroup = new Group();
   private stars: Stars;
-  private earth: Planet;
 
   // private sphereBody?: RigidBody;
 
@@ -56,61 +53,35 @@ export class Engine {
     engine = this;
 
     this.animate = this.animate.bind(this);
-    this.camera = new PerspectiveCamera(40, 1, 10, 10_000_000_000);
+    this.camera = new PerspectiveCamera(30, 1, 10, 5_000_000_000_000);
+    // this.cameraRotation = new Quaternion();
+    // this.cameraRotation.setFromAxisAngle(new Vector3(0, 0, 1), Math.PI * 0.05);
     // this.camera.up.set(0, 0, 1);
 
-    this.sunlight = this.createSunlight();
+    // this.sunlight = this.createSunlight();
     this.createAmbientLight();
     this.renderer = this.createRenderer();
 
-    const group = new Group();
-    this.scene.add(group);
+    // const group = new Group();
+    this.scene.add(this.rootGroup);
 
-    const geometry = new SphereGeometry(1, 32, 16);
-    const material = new MeshStandardMaterial({ color: 0xffff00 });
-    this.sphere = new Mesh(geometry, material);
-    this.sphere.castShadow = true;
-    group.add(this.sphere);
+    // const geometry = new SphereGeometry(1, 32, 16);
+    // const material = new MeshStandardMaterial({ color: 0xffff00 });
+    // this.sphere = new Mesh(geometry, material);
+    // this.sphere.castShadow = true;
+    // group.add(this.sphere);
 
-    this.earth = new Planet(6_378_100, {
-      oblateness: 0.00335,
-      texture: earthTexture,
-      atmosphereThickness: 500_000,
-      atmosphereColor: new Color(0.5, 0.5, 1.0),
-      atmosphereOpacity: 0.3,
-      luminosity: 0.5,
-      luminousColor: new Color(0.5, 0.5, 1.0),
-      luminousDistance: 1000_000_000,
-    });
-    this.earth.addToScene(group);
-
-    const moon = new Planet(1_079_600, {
-      oblateness: 0.00648,
-      texture: moonTexture,
-    });
-    moon.group.position.x = 384_000_000;
-    moon.setParent(this.earth);
-
-    const mars = new Planet(4_212_300, {
-      oblateness: 0.00648,
-      texture: marsTexture,
-      atmosphereThickness: 200_000,
-      atmosphereColor: new Color(1.0, 0.7, 0.7),
-      atmosphereOpacity: 0.2,
-    });
-    mars.group.position.x = -60_378_100;
-    mars.addToScene(group);
-
-    this.stars = new Stars(group);
+    this.stars = new Stars(this.rootGroup);
+    this.planets = new Orrery();
+    this.planets.addToScene(this.rootGroup);
+    this.viewTarget = this.planets.earth;
 
     const helper = new AxesHelper();
     helper.position.set(6, 0, 0);
-    group.add(helper);
+    helper.scale.setScalar(20_000_000);
+    this.rootGroup.add(helper);
 
-    cameraOffset.setFromSphericalCoords(30_000_000, MathUtils.degToRad(75), this.viewAngle);
-    this.camera.position.copy(this.viewPosition).add(cameraOffset);
-    this.camera.lookAt(this.viewPosition);
-    this.camera.updateMatrixWorld();
+    this.updateCamera();
   }
 
   /** Shut down the renderer and release all resources. */
@@ -126,7 +97,6 @@ export class Engine {
     this.onWindowResize();
 
     await this.stars.load();
-    this.stars.start();
 
     // Make sure physics WASM bundle is initialized before starting rendering loop.
     // Physics objects cannot be created until after physics engine is initialized.
@@ -170,16 +140,29 @@ export class Engine {
     this.mount?.removeChild(this.renderer.domElement);
   }
 
+  public updateCamera() {
+    if (this.viewTarget) {
+      this.viewTarget.getWorldPosition(this.viewCenter);
+    }
+    this.camera.rotation.order = 'YZX';
+    this.camera.rotation.y = this.cameraAzimuthAngle;
+    this.camera.rotation.z = this.cameraElevationAngle;
+    this.cameraPosition.set(this.cameraDistance, 0, 0);
+    this.cameraPosition.applyEuler(this.camera.rotation);
+    this.cameraPosition.add(this.viewCenter);
+    this.camera.position.copy(this.cameraPosition);
+    this.camera.lookAt(this.viewCenter);
+    this.camera.updateMatrixWorld();
+  }
+
   /** Update the positions of any moving objects. */
   public updateScene(deltaTime: number) {
     // Run callbacks.
     this.events.emit('update', deltaTime);
 
-    this.earth.update(deltaTime);
-    // Run physics
-    // this.physicsWorld?.step();
-    // const t = this.sphereBody!.translation();
-    // this.sphere.position.set(t.x, t.y, t.z);
+    this.planets.update(deltaTime);
+    this.updateCamera();
+    this.stars.update();
   }
 
   /** Return the elapsed running time. */
@@ -196,7 +179,7 @@ export class Engine {
 
   /** Render the scene. */
   public render() {
-    this.adjustLightPosition();
+    // this.adjustLightPosition();
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -224,42 +207,42 @@ export class Engine {
     return renderer;
   }
 
-  private createSunlight() {
-    const sunlight = new DirectionalLight(new Color('#ffffff').convertSRGBToLinear(), 0.4);
-    sunlight.castShadow = true;
-    sunlight.shadow.mapSize.width = 1024;
-    sunlight.shadow.mapSize.height = 1024;
-    sunlight.shadow.camera.near = 1;
-    sunlight.shadow.camera.far = 32;
-    sunlight.shadow.camera.left = -15;
-    sunlight.shadow.camera.right = 15;
-    sunlight.shadow.camera.top = 15;
-    sunlight.shadow.camera.bottom = -15;
-    this.scene.add(sunlight);
-    this.scene.add(sunlight.target);
-    return sunlight;
-  }
+  // private createSunlight() {
+  //   const sunlight = new DirectionalLight(new Color('#ffffff').convertSRGBToLinear(), 0.4);
+  //   sunlight.castShadow = true;
+  //   sunlight.shadow.mapSize.width = 1024;
+  //   sunlight.shadow.mapSize.height = 1024;
+  //   sunlight.shadow.camera.near = 1;
+  //   sunlight.shadow.camera.far = 32;
+  //   sunlight.shadow.camera.left = -15;
+  //   sunlight.shadow.camera.right = 15;
+  //   sunlight.shadow.camera.top = 15;
+  //   sunlight.shadow.camera.bottom = -15;
+  //   this.scene.add(sunlight);
+  //   this.scene.add(sunlight.target);
+  //   return sunlight;
+  // }
 
   public createAmbientLight() {
     const light = new HemisphereLight(
       new Color(0xb1e1ff).multiplyScalar(0.2).convertSRGBToLinear(),
       new Color(0xb97a20).multiplyScalar(0.2).convertSRGBToLinear(),
-      0.6
+      0.3
     );
     this.scene.add(light);
     return light;
   }
 
-  private adjustLightPosition() {
-    // Adjust shadow map bounds
-    const lightPos = this.sunlight.target.position;
-    lightPos.copy(this.viewPosition);
+  // private adjustLightPosition() {
+  //   // Adjust shadow map bounds
+  //   const lightPos = this.sunlight.target.position;
+  //   lightPos.copy(this.viewPosition);
 
-    // Quantizing the light's location reduces the amount of shadow jitter.
-    lightPos.x = Math.round(lightPos.x);
-    lightPos.z = Math.round(lightPos.z);
-    this.sunlight.position.set(lightPos.x + 6, lightPos.y + 8, lightPos.z + 4);
-  }
+  //   // Quantizing the light's location reduces the amount of shadow jitter.
+  //   lightPos.x = Math.round(lightPos.x);
+  //   lightPos.z = Math.round(lightPos.z);
+  //   this.sunlight.position.set(lightPos.x + 6, lightPos.y + 8, lightPos.z + 4);
+  // }
 }
 
 let engine: Engine;
