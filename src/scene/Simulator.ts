@@ -6,7 +6,6 @@
 //   World,
 // } from '@dimforge/rapier3d-compat';
 import {
-  AxesHelper,
   Clock,
   Color,
   Group,
@@ -27,11 +26,12 @@ import { Vehicle } from './vehicles/Vehicle';
 // const cameraOffset = new Vector3();
 
 /** Contains the three.js renderer and handles to important resources. */
-export class Engine {
+export class Simulator {
   public readonly scene = new Scene();
   public readonly camera: PerspectiveCamera;
   public readonly renderer: WebGLRenderer;
   public readonly viewCenter = new Vector3();
+  public readonly eclipticGroup = new Group();
   public cameraElevationAngle = Math.PI * 0.05;
   public cameraAzimuthAngle = 0;
   public readonly cameraPosition = new Vector3();
@@ -45,14 +45,13 @@ export class Engine {
   private frameId: number | null = null;
   private clock = new Clock();
   // private physicsWorld?: World;
-  private rootGroup = new Group();
   private stars: Stars;
   private vehicles: Vehicle[] = [];
 
   // private sphereBody?: RigidBody;
 
   constructor() {
-    engine = this;
+    simulator = this;
 
     this.animate = this.animate.bind(this);
     this.camera = new PerspectiveCamera(30, 1, 10, 5_000_000_000_000);
@@ -60,23 +59,45 @@ export class Engine {
     this.createAmbientLight();
     this.renderer = this.createRenderer();
 
-    this.scene.add(this.rootGroup);
+    this.scene.add(this.eclipticGroup);
 
-    this.stars = new Stars(this.rootGroup);
+    this.stars = new Stars(this.eclipticGroup);
     this.planets = new Orrery();
-    this.planets.addToScene(this.rootGroup);
+    this.planets.addToScene(this.eclipticGroup);
     this.viewTarget = this.planets.earth;
 
-    const vh = new Vehicle('Sphere', this.scene);
+    const vh = new Vehicle('TestVehicle', this.scene);
     vh.setPrimary(this.planets.earth);
     vh.position.copy(this.planets.earth.position);
-    vh.position.x = +this.planets.earth.radius * 2;
+    vh.position.x += this.planets.earth.radius * 2;
+    vh.velocity.set(0, 5588, 50); // m/s
+    vh.calcOrbit();
     this.vehicles.push(vh);
 
-    const helper = new AxesHelper();
-    helper.position.set(6, 0, 0);
-    helper.scale.setScalar(20_000_000);
-    this.rootGroup.add(helper);
+    const vh2 = new Vehicle('TestVehicle2', this.scene);
+    vh2.setPrimary(this.planets.earth);
+    vh2.position.copy(this.planets.earth.position);
+    vh2.position.x += this.planets.earth.radius * 2.05;
+    vh2.velocity.set(0, 6588, 50); // m/s
+    vh2.calcOrbit();
+    this.vehicles.push(vh2);
+
+    const vh3 = new Vehicle('TestVehicle3', this.scene);
+    vh3.setPrimary(this.planets.earth);
+    vh3.position.copy(this.planets.earth.position);
+    vh3.position.x += this.planets.earth.radius * 1.95;
+    vh3.velocity.set(200, 2588, 1500); // m/s
+    vh3.calcOrbit();
+    this.vehicles.push(vh3);
+
+    const vh4 = new Vehicle('TestVehicle4', this.scene);
+    vh4.setPrimary(this.planets.earth);
+    vh4.position.copy(this.planets.earth.position);
+    vh4.position.x += this.planets.earth.radius * 1.9;
+    vh4.position.y += this.planets.earth.radius;
+    vh4.velocity.set(0, 0, 1500); // m/s
+    vh4.calcOrbit();
+    this.vehicles.push(vh4);
 
     this.updateCamera();
   }
@@ -136,9 +157,10 @@ export class Engine {
     if (this.viewTarget) {
       this.viewTarget.getWorldPosition(this.viewCenter);
     }
-    this.camera.rotation.order = 'YZX';
-    this.camera.rotation.y = this.cameraAzimuthAngle;
-    this.camera.rotation.z = this.cameraElevationAngle;
+    this.camera.up.set(0, 0, 1);
+    this.camera.rotation.order = 'ZYX';
+    this.camera.rotation.z = this.cameraAzimuthAngle;
+    this.camera.rotation.y = -this.cameraElevationAngle;
     this.cameraPosition.set(this.cameraDistance, 0, 0);
     this.cameraPosition.applyEuler(this.camera.rotation);
     this.cameraPosition.add(this.viewCenter);
@@ -210,10 +232,10 @@ export class Engine {
   }
 }
 
-let engine: Engine;
+let simulator: Simulator;
 
-export function getEngine(): Engine {
-  return engine;
+export function getSimulator(): Simulator {
+  return simulator;
 }
 
 if (import.meta.hot) {

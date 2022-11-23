@@ -1,6 +1,6 @@
 # Coordinates
 
-Coordinate system is heliocentric, with the positive Z axis pointing in the direction of the Sun's
-north pole.
+https://en.wikipedia.org/wiki/Ecliptic_coordinate_system
 
-Positive X axis corresponds to the position of Earth at the beginning of the terrestrial year.
+Coordinate system is heliocentric, with the positive Z axis pointing north, perpendicular to
+the plane of the ecliptic. X axis points towards the vernal equinox.

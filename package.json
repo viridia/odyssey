@@ -15,7 +15,8 @@
     "format": "prettier --config .prettierrc.cjs --write ./src",
     "preview": "vite preview",
     "test:lint": "eslint -c .eslintrc.cjs \"src/**/*.ts?(x)\"",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "babel-preset-solid": "^1.6.2",

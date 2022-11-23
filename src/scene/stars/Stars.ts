@@ -5,12 +5,15 @@ import {
   Mesh,
   Object3D,
   StaticDrawUsage,
+  Vector3,
 } from 'three';
 import { StarsMaterial } from './StarsMaterial';
 import { TextureLoader } from 'three';
 import star from '../../textures/star.png';
-import { getEngine } from '../Engine';
+import { getSimulator } from '../Simulator';
 import { invariant } from '../../lib/invariant';
+
+const XPOS = new Vector3(1, 0, 0);
 
 // RA, Dec, Spectral, Mag
 type IStarRow = [number, number, string, number];
@@ -34,6 +37,7 @@ export class Stars {
     this.mesh.receiveShadow = false;
     this.mesh.castShadow = false;
     this.mesh.position.set(0, 0, 0);
+    this.mesh.rotateOnAxis(XPOS, Math.PI * 0.5);
     this.mesh.updateMatrix();
 
     const loader = new TextureLoader();
@@ -96,8 +100,8 @@ export class Stars {
   }
 
   public update() {
-    const engine = getEngine();
-    this.mesh.position.copy(engine.cameraPosition);
+    const sim = getSimulator();
+    this.mesh.position.copy(sim.cameraPosition);
   }
 }
 

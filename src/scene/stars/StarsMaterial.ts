@@ -35,7 +35,7 @@ void main() {
   float lumin = clamp(brightness / 0.07, 0.3, 1.);
 
   // Calculate position from right ascension and declination.
-  // To convert earth-based coords to heliocentric use mesh transform.
+  // To convert equatorial coords to ecliptic use mesh transform.
   vec4 starPosition = vec4(
     DIST * cos(dec) * cos(ra),
     DIST * sin(dec),

@@ -1,18 +1,16 @@
 import {
   BufferGeometry,
   Color,
-  Group,
   Material,
   Mesh,
   MeshBasicMaterial,
   Object3D,
   PointLight,
   SphereGeometry,
-  Vector3,
 } from 'three';
 import { invariant } from '../../lib/invariant';
+import { CelestialBody } from './CelestialBody';
 import { CoronaHaloMaterial } from './CoronaHaloMaterial';
-import { IPrimary, ISatellite } from './types';
 
 const WIDTH_SEGMENTS = 96;
 const HEIGHT_SEGMENTS = 48;
@@ -32,21 +30,15 @@ interface IPlanetOptions {
 
 // const loader = new TextureLoader();
 
-export class Sun implements IPrimary {
+export class Sun extends CelestialBody {
   public mesh: Mesh<BufferGeometry, MeshBasicMaterial>;
   public geometry: BufferGeometry;
-  public material: MeshBasicMaterial;
-  public group = new Group();
-  public satellites: ISatellite[] = [];
+  private material: MeshBasicMaterial;
   private atmoMesh?: Mesh<BufferGeometry, Material>;
   private atmoMaterial?: CoronaHaloMaterial;
-  private worldPosition = new Vector3();
 
-  constructor(
-    public readonly name: string,
-    public readonly radius: number,
-    options: IPlanetOptions = {}
-  ) {
+  constructor(name: string, radius: number, options: IPlanetOptions = {}) {
+    super(name, radius, options.mass ?? 1);
     this.material = new MeshBasicMaterial({
       // map: options.texture ? loader.load(options.texture) : undefined,
     });
@@ -83,11 +75,6 @@ export class Sun implements IPrimary {
       );
       this.group.add(light);
     }
-  }
-
-  public get position(): Vector3 {
-    this.group.getWorldPosition(this.worldPosition);
-    return this.worldPosition;
   }
 
   public addToScene(scene: Object3D): this {

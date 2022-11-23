@@ -1,7 +1,7 @@
 # TODO
 
 * Ellipse math.
-* Masses of the planets and sun.
+* Bug: Sun is apparent diameter is incorrect.
 * Planet orbit paths.
   * Elliptical
   * Transfer
@@ -15,8 +15,6 @@
 * Rocket Model (blender / GLTF)
 * Local shadow lights
 * Don't let camera be inside planets
-* Better trackball controller.
-  * Limit rotation at poles
 * UI for selecting PoV / Focus object.
 * Rocket Elliptical Orbits.
 * Rocket transfer orbits.
@@ -26,6 +24,7 @@
 * Earth bump map.
 * Launch complices.
 * Collisions
+* Text annotations
 
 # Notes
 
@@ -49,10 +48,3 @@ is an issue.
   * Hyperbolic
   * Transfer - a FP between two masses, influenced by both.
     * Done using integration
-
-
-* Spacecraft:
-  * list
-    * position
-    * velocity
-    * primary

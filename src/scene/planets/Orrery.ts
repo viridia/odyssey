@@ -1,4 +1,4 @@
-import { Color, Object3D } from 'three';
+import { Color, Object3D, Vector3 } from 'three';
 import { Planet } from './Planet';
 import { Sun } from './Sun';
 
@@ -9,6 +9,7 @@ import moonTexture from './textures/moon.jpeg';
 const KM = 1000;
 
 const MEarth = 5.97219e24;
+const ZPOS = new Vector3(0, 0, 1);
 
 export class Orrery {
   public readonly sol: Sun;
@@ -20,6 +21,7 @@ export class Orrery {
   constructor() {
     this.sol = new Sun('Sol', 696_340 * KM, {
       mass: 1.9891e30,
+      // TODO: This is visually wrong, rethink how this works.
       atmosphereThickness: 10_000_000 * KM,
       atmosphereColor: new Color(1.0, 1.0, 0.7),
       atmosphereOpacity: 1,
@@ -36,19 +38,20 @@ export class Orrery {
       atmosphereThickness: 500_000,
       atmosphereColor: new Color(0.5, 0.5, 1.0),
       atmosphereOpacity: 0.3,
-      luminosity: 0.5,
+      luminosity: 0.2,
       luminousColor: new Color(0.5, 0.5, 1.0),
-      luminousDistance: 1000_000_000,
+      luminousDistance: 10e8,
     });
-    this.earth.group.position.z = -147_770_000 * KM;
+    this.earth.group.position.y = 147_770_000 * KM;
     this.earth.setPrimary(this.sol);
 
-    this.moon = new Planet('Moon', 1_079_600, {
+    this.moon = new Planet('Moon', 1.7374e6, {
       mass: 7.34767309e22,
       oblateness: 0.00648,
       texture: moonTexture,
     });
-    this.moon.group.position.x = 384_000_000;
+    this.moon.group.position.x = 3.844e8;
+    this.moon.group.position.applyAxisAngle(ZPOS, -1.5);
     this.moon.setPrimary(this.earth);
 
     this.mars = new Planet('Mars', 4_212_300, {
@@ -65,6 +68,7 @@ export class Orrery {
 
   public update(deltaTime: number) {
     this.sol.update(deltaTime);
+    this.moon.group.position.applyAxisAngle(ZPOS, deltaTime * 0.01);
   }
 
   public addToScene(scene: Object3D): this {

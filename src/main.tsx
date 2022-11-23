@@ -1,19 +1,19 @@
 import { render } from 'solid-js/web';
-import { Engine } from './scene/Engine';
+import { Simulator } from './scene/Simulator';
 import { createEffect, createSignal } from 'solid-js';
 import { createCameraController } from './createCameraController';
 import './root.scss';
 
-const engine = new Engine();
+const simulator = new Simulator();
 
 function Main() {
   const [viewport, setViewport] = createSignal<HTMLElement>();
-  const controllerAttrs = createCameraController(engine);
+  const controllerAttrs = createCameraController(simulator);
 
   createEffect(() => {
     const elt = viewport();
     if (elt) {
-      engine.attach(elt);
+      simulator.attach(elt);
     }
   });
 
