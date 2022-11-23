@@ -47,7 +47,6 @@ export class FlightPathOverlay {
 
     this.elements.fromStateVector(this.relativePosition, this.relativeVelocity, 0, primary.mass);
     this.orbit.setParent(primary.group);
-    console.log({ raan: this.elements.raan, i: this.elements.i, pe: this.elements.ap });
 
     const pos: number[] = [];
     const p = this.elements.a * (1 - this.elements.e ** 2);

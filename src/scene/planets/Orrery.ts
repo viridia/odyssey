@@ -21,10 +21,9 @@ export class Orrery {
   constructor() {
     this.sol = new Sun('Sol', 696_340 * KM, {
       mass: 1.9891e30,
-      // TODO: This is visually wrong, rethink how this works.
-      atmosphereThickness: 10_000_000 * KM,
+      atmosphereThickness: 5e9,
       atmosphereColor: new Color(1.0, 1.0, 0.7),
-      atmosphereOpacity: 1,
+      atmosphereOpacity: 0.5,
       luminosity: 0.5,
       luminousColor: new Color(1.0, 1.0, 1.0),
       luminousDistance: 5_000_000_000 * KM,

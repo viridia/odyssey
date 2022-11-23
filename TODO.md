@@ -1,15 +1,16 @@
 # TODO
 
 * Ellipse math.
+  * Mean anomaly - motion along path
+  * Time offset.
 * Bug: Sun is apparent diameter is incorrect.
 * Planet orbit paths.
   * Elliptical
   * Transfer
 * Planetary Day Length / Offset
-* Planet LoDs
 * Jupiter
 * Milky Way
-* Axial Tilt
+* Axial Tilt (for planets other than earth)
 * Saturn / Rings
 * Jovian Moons
 * Rocket Model (blender / GLTF)

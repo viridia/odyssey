@@ -1,7 +1,6 @@
 import {
   BufferGeometry,
   Color,
-  Material,
   Mesh,
   MeshBasicMaterial,
   Object3D,
@@ -10,7 +9,7 @@ import {
 } from 'three';
 import { invariant } from '../../lib/invariant';
 import { CelestialBody } from './CelestialBody';
-import { CoronaHaloMaterial } from './CoronaHaloMaterial';
+import { CoronalHaze } from './CoronalHaze';
 
 const WIDTH_SEGMENTS = 96;
 const HEIGHT_SEGMENTS = 48;
@@ -34,8 +33,6 @@ export class Sun extends CelestialBody {
   public mesh: Mesh<BufferGeometry, MeshBasicMaterial>;
   public geometry: BufferGeometry;
   private material: MeshBasicMaterial;
-  private atmoMesh?: Mesh<BufferGeometry, Material>;
-  private atmoMaterial?: CoronaHaloMaterial;
 
   constructor(name: string, radius: number, options: IPlanetOptions = {}) {
     super(name, radius, options.mass ?? 1);
@@ -58,13 +55,12 @@ export class Sun extends CelestialBody {
     this.group.add(this.mesh);
 
     if (options.atmosphereThickness) {
-      this.atmoMaterial = new CoronaHaloMaterial({
-        color: options.atmosphereColor ?? new Color(1.0, 1.0, 1.0),
-        thickness: options.atmosphereThickness / radius,
+      new CoronalHaze(this.group, {
+        radius,
+        thickness: options.atmosphereThickness,
+        color: options.atmosphereColor ?? new Color(1, 1, 1),
         opacity: options.atmosphereOpacity ?? 1,
       });
-      this.atmoMesh = new Mesh(this.geometry, this.atmoMaterial);
-      this.group.add(this.atmoMesh);
     }
 
     if (options.luminosity) {
