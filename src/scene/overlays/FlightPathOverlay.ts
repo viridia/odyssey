@@ -1,20 +1,12 @@
-import { AdditiveBlending, Color, Group, Matrix4, Vector3 } from 'three';
+import { AdditiveBlending, Color, Group, Vector3 } from 'three';
 import { OrbitalElements } from '../../math/OrbitalElements';
 import { CelestialBody } from '../planets/CelestialBody';
 import { getSimulator } from '../Simulator';
 import { TranslucentLines } from './TranslucentLines';
 
-const ma = new Matrix4();
-const mt = new Matrix4();
-
 export class FlightPathOverlay {
   private orbit: TranslucentLines;
   private group = new Group();
-  private elements = new OrbitalElements();
-
-  // Position and velocity relative to primary.
-  private relativePosition = new Vector3();
-  private relativeVelocity = new Vector3();
 
   constructor() {
     this.orbit = new TranslucentLines();
@@ -36,37 +28,19 @@ export class FlightPathOverlay {
   /**
    * Calculate the conic orbit.
    * @param primary Mass we are orbiting around
-   * @param position Position in ecliptic coordinates
-   * @param velocity Velocity in ecliptic coordinates
+   * @param elements The orbital elements
    */
-  public calculateOrbit(primary: CelestialBody, position: Vector3, velocity: Vector3) {
-    // TODO: ACC: This is not correct, we want to know the position of the primary
-    // at a given point in the future.
-    this.relativePosition.copy(position).sub(primary.position);
-    this.relativeVelocity.copy(velocity); //.sub(this.primary.ve);
-
-    this.elements.fromStateVector(this.relativePosition, this.relativeVelocity, 0, primary.mass);
+  public update(primary: CelestialBody, elements: OrbitalElements) {
     this.orbit.setParent(primary.group);
-
-    const pos: number[] = [];
-    const p = this.elements.a * (1 - this.elements.e ** 2);
-
-    ma.makeRotationZ(this.elements.ap);
-    ma.premultiply(mt.makeRotationX(this.elements.i));
-    ma.premultiply(mt.makeRotationZ(this.elements.raan));
+    const position: number[] = [];
     const steps = 128;
-
     for (let phi = 0; phi <= steps; phi++) {
       const angle = (phi * Math.PI * 2) / steps;
-      const e = this.elements.trueAnomalyFromEccentric(angle);
-      const m = p / (1 + this.elements.e * Math.cos(e));
-      const x = Math.cos(e) * m;
-      const y = Math.sin(e) * m;
-      v.set(x, y, 0);
-      v.applyMatrix4(ma);
-      pos.push(...v.toArray());
+      const ta = elements.trueAnomalyFromEccentric(angle);
+      elements.toIntertial(v, ta);
+      position.push(...v.toArray());
     }
-    this.orbit.updateGeometry(pos);
+    this.orbit.updateGeometry(position);
   }
 }
 

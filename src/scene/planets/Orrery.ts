@@ -24,7 +24,7 @@ export class Orrery {
       atmosphereThickness: 5e9,
       atmosphereColor: new Color(1.0, 1.0, 0.7),
       atmosphereOpacity: 0.5,
-      luminosity: 0.5,
+      luminosity: 1.0,
       luminousColor: new Color(1.0, 1.0, 1.0),
       luminousDistance: 5_000_000_000 * KM,
     });

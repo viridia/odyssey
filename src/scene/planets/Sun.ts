@@ -78,14 +78,6 @@ export class Sun extends CelestialBody {
     return this;
   }
 
-  public setAxis(): this {
-    return this;
-  }
-
-  public setRotationSpeed(): this {
-    return this;
-  }
-
   public update(delta: number) {
     this.satellites.forEach(sat => sat.update(delta));
   }
