@@ -29,11 +29,9 @@ export function eccentricAnomalyFromMeanHyperbolic(
   // let F0 = M;
 
   // Using bisect because newton-raphson doesn't work for some reason.
-  return bisect(
-    F => e * Math.sinh(F) - F - M,
-    0,
-    Math.PI * 2,
-  );
+  return bisect(F => e * Math.sinh(F) - F - M, 0, Math.PI * 2, {
+    maxIterations: 200,
+  });
 
   // const result = newtonRaphson(
   //   F => e * Math.sinh(F) - F - M,

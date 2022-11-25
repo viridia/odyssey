@@ -1,8 +1,8 @@
-import { AdditiveBlending, Color, DoubleSide, ShaderMaterial, UniformsLib } from 'three';
+import { Color, DoubleSide, ShaderMaterial, UniformsLib } from 'three';
 import { ShaderChunk } from 'three';
 import glsl from '../glsl';
 
-const starsVert = glsl`
+const discVert = glsl`
 #define STANDARD
 
 ${ShaderChunk.common}
@@ -13,6 +13,7 @@ ${ShaderChunk.logdepthbuf_pars_vertex}
 uniform float scale;
 
 varying vec2 vUV;
+varying float distance;
 
 void main() {
 	${ShaderChunk.uv_vertex}
@@ -22,8 +23,9 @@ void main() {
 
   // Position on sprite quad [-1..1, -1..1].
   vUV = (position.xy - (center - vec2(0.5)));
-  vec2 quadCoords = vUV * scale;
   vec4 mvPosition = modelViewMatrix * vec4(0., 0., 0., 1.0);
+  distance = length(mvPosition);
+  vec2 quadCoords = vUV * scale * distance;
   mvPosition.xy += quadCoords;
 
   gl_Position = projectionMatrix * mvPosition;
@@ -32,14 +34,15 @@ void main() {
 	${ShaderChunk.worldpos_vertex}
 }`;
 
-const starsFrag = glsl`
+const discFrag = glsl`
 #define STANDARD
 
 uniform vec3 diffuse;
-uniform float thickness;
-uniform float opacity;
+uniform float nominalDistance;
+uniform float minDistance;
 
 varying vec2 vUV;
+varying float distance;
 
 ${ShaderChunk.common}
 ${ShaderChunk.packing}
@@ -53,7 +56,8 @@ void main() {
   ${ShaderChunk.logdepthbuf_fragment}
   ${ShaderChunk.clipping_planes_fragment}
 
-  float dist = max(0., (1. - length(vUV))) / thickness;
+  float opacity = smoothstep(distance, minDistance, nominalDistance);
+  float dist = max(0., (1. - length(vUV))) / 0.4;
   dist = pow(dist, 5.);
 	vec4 diffuseColor = vec4(diffuse, dist * opacity);
 
@@ -66,23 +70,21 @@ void main() {
 	${ShaderChunk.premultiplied_alpha_fragment}
 }`;
 
-export class CoronalHazeMaterial extends ShaderMaterial {
+export class DiscMaterial extends ShaderMaterial {
   constructor() {
     super({
       uniforms: {
         ...UniformsLib.common,
         diffuse: { value: new Color('#555555') },
         scale: { value: 1 },
-        thickness: { value: 0.5 },
-        opacity: { value: 1 },
+        nominalDistance: { value: 0 },
+        minDistance: { value: 0 },
       },
-      fragmentShader: starsFrag,
-      vertexShader: starsVert,
-      depthTest: false,
-      depthWrite: false,
+      fragmentShader: discFrag,
+      vertexShader: discVert,
       side: DoubleSide,
-      // transparent: true,
-      blending: AdditiveBlending,
+      transparent: true,
+      // blending: AdditiveBlending,
     });
   }
 }

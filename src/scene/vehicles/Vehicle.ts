@@ -9,9 +9,9 @@ import {
   Vector3,
 } from 'three';
 import { OrbitalElements } from '../../math/OrbitalElements';
+import { DiscMarker } from '../overlays/DiscMarker';
 import { FlightPathOverlay } from '../overlays/FlightPathOverlay';
 import { CelestialBody } from '../planets/CelestialBody';
-import { getSimulator } from '../Simulator';
 
 export class Vehicle {
   // Position and velocity in ecliptic coords.
@@ -31,20 +31,34 @@ export class Vehicle {
   private path = new FlightPathOverlay();
 
   private material: MeshStandardMaterial;
-  private lastUpdateTime = 0;
+
+  private marker: DiscMarker;
 
   constructor(public readonly name: string, parent: Object3D) {
     parent.add(this.group);
 
-    this.lastUpdateTime = getSimulator().simTime;
     this.material = new MeshStandardMaterial({
       color: new Color(0, 0, 1).convertSRGBToLinear(),
       emissive: new Color(0, 0, 0.5).convertSRGBToLinear(),
       depthTest: false,
     });
-    const sphere = new SphereGeometry(3e5, 64, 32);
+    const sphere = new SphereGeometry(3e4, 64, 32);
     const mesh = new Mesh(sphere, this.material);
     this.group.add(mesh);
+
+    // Small LOD sphere to display when planet gets very small.
+    this.marker = new DiscMarker(this.group, {
+      radius: 0.003,
+      color: new Color(0, 0.6, 0).convertSRGBToLinear(),
+      nominalDistance: 1e7,
+      minDistance: 1e6,
+    });
+  }
+
+  public dispose() {
+    // TODO: dispose geometry.
+    this.material.dispose();
+    this.marker.dispose();
   }
 
   public setPrimary(primary: CelestialBody) {
@@ -60,35 +74,39 @@ export class Vehicle {
       r.copy(this.position).sub(this.primary.position);
       rDot.copy(this.velocity); //.sub(this.primary.velocity);
       this.orbit.fromStateVector(r, rDot, this.primary.mass);
+      this.orbit.ma = this.orbit.meanAnomalyFromTrue(this.orbit.v);
 
       this.path.update(this.primary, this.orbit);
     }
   }
 
-  public update() {
+  public simulate(delta: number) {
     this.group.position.copy(this.position);
     if (this.primary) {
       const n = this.orbit.meanMotion(this.primary.mass);
-      const t = n * (getSimulator().simTime - this.lastUpdateTime);
+      const t = n * delta;
       if (this.orbit.e < 1) {
-        const m = this.orbit.meanAnomalyFromTrue(this.orbit.v);
-        const phi = MathUtils.euclideanModulo(t + m, Math.PI * 2);
-        const ta = this.orbit.trueAnomalyFromMean(phi);
+        // const m = this.orbit.meanAnomalyFromTrue(this.orbit.v);
+        this.orbit.ma = MathUtils.euclideanModulo(this.orbit.ma + t, Math.PI * 2);
+        // const phi = MathUtils.euclideanModulo(t + m, Math.PI * 2);
+        const ta = this.orbit.trueAnomalyFromMean(this.orbit.ma);
         this.orbit.toInertial(this.position, ta);
         this.position.add(this.primary.position);
-        this.group.position.copy(this.position);
       } else {
-        const m = this.orbit.meanAnomalyFromTrue(this.orbit.v);
-        const phi = MathUtils.euclideanModulo(t + m, Math.PI * 2);
-        const ta = this.orbit.trueAnomalyFromMean(phi);
+        // const m = this.orbit.meanAnomalyFromTrue(this.orbit.v);
+        this.orbit.ma += t;
+        const ta = this.orbit.trueAnomalyFromMean(this.orbit.ma);
         this.orbit.toInertial(this.position, ta);
         this.position.add(this.primary.position);
-        this.group.position.copy(this.position);
       }
 
       // const distanceToPrimary = this.position.distanceTo(this.primary.position);
       // this.material.color = distanceToPrimary > this.primary.radius ? GREEN : RED;
     }
+  }
+
+  public animate() {
+    this.group.position.copy(this.position);
   }
 }
 

@@ -81,6 +81,7 @@ export class Simulator {
 
     this.stars = new Stars(this.eclipticGroup);
     this.planets = new Orrery();
+    this.planets.simulate(0);
     this.planets.addToScene(this.eclipticGroup);
     this.viewTarget = this.planets.earth;
 
@@ -163,6 +164,7 @@ export class Simulator {
     // // .setCollisionGroups(CollisionMask.ActorMask | CollisionMask.TouchActor);
     // this.physicsWorld.createCollider(clDesc, this.sphereBody);
 
+    this.planets.simulate(0);
     if (!this.frameId) {
       this.clock.start();
       this.frameId = requestAnimationFrame(this.animate);
@@ -195,34 +197,24 @@ export class Simulator {
     this.camera.updateMatrixWorld();
   }
 
-  /** Update the positions of any moving objects. */
-  public updateScene(deltaTime: number) {
-    // Run callbacks.
-    if (!this.paused()) {
-      this.events.emit('simulate', deltaTime * this.simSpeed);
-      this.planets.simulate(deltaTime * this.simSpeed);
-    }
-    this.events.emit('animate', deltaTime);
-    this.planets.animate(deltaTime);
-
-    this.vehicles.forEach(v => v.update());
-    this.updateCamera();
-    this.stars.update();
-  }
-
   public get simSpeed(): number {
     return this.timeScale[this.speed()];
   }
 
-  /** Return the elapsed running time. */
-  // public get time(): number {
-  //   return this.clock.elapsedTime;
-  // }
-
   private animate() {
     const deltaTime = Math.min(this.clock.getDelta(), 0.1);
-    this.simTime += this.paused() ? 0 : deltaTime * this.simSpeed;
-    this.updateScene(deltaTime);
+    if (!this.paused()) {
+      const elapsed = deltaTime * this.simSpeed;
+      this.simTime += elapsed;
+      this.events.emit('simulate', elapsed);
+      this.planets.simulate(elapsed);
+      this.vehicles.forEach(v => v.simulate(elapsed));
+    }
+    this.updateCamera();
+    this.events.emit('animate', deltaTime);
+    this.planets.animate(deltaTime);
+    this.vehicles.forEach(v => v.animate());
+    this.stars.update();
     this.render();
     this.frameId = window.requestAnimationFrame(this.animate);
   }
@@ -238,9 +230,9 @@ export class Simulator {
       const width = this.mount.clientWidth;
       const height = this.mount.clientHeight;
       this.renderer.setSize(width, height);
-      this.renderer.render(this.scene, this.camera);
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
+      // this.renderer.render(this.scene, this.camera);
     }
   }
 

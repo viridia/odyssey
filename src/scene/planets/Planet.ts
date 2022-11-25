@@ -50,6 +50,7 @@ export class Planet extends CelestialBody {
   private sunlightDir = new Vector3();
   private lpMaterial: MeshBasicMaterial;
   private lpMesh: Mesh<BufferGeometry, MeshBasicMaterial>;
+  private oblateness = 0;
 
   private dayLength = 0;
   private dayRotation = 0;
@@ -66,9 +67,11 @@ export class Planet extends CelestialBody {
       tx.encoding = sRGBEncoding;
       this.material.map = tx;
     }
+    this.oblateness = options.oblateness ?? 0;
     this.geometry = new SphereGeometry(radius, WIDTH_SEGMENTS, HEIGHT_SEGMENTS);
     this.mesh = new Mesh(this.geometry, this.material);
-    this.mesh.scale.set(1, 1 + (options.oblateness ?? 0), 1);
+    this.mesh.matrixAutoUpdate = false;
+    // this.mesh.scale.set(1, 1 + (options.oblateness ?? 0), 1);
     // this.mesh.castShadow = true;
     // this.mesh.visible = false;
 
@@ -149,7 +152,6 @@ export class Planet extends CelestialBody {
     // const sim = getSimulator();
     if (this.dayLength > 0) {
       this.dayRotation = MathUtils.euclideanModulo(this.dayRotation + delta / this.dayLength, 1);
-      this.mesh.matrixAutoUpdate = false;
     }
 
     this.satellites.forEach(sat => sat.simulate(delta));
@@ -160,12 +162,10 @@ export class Planet extends CelestialBody {
     this.mesh.matrixAutoUpdate = false;
     this.mesh.matrix
       .identity()
+      .multiply(mTemp.makeScale(1, 1, 1 + this.oblateness))
       .multiply(mTemp.makeRotationX(Math.PI * 0.5))
       .multiply(mTemp.makeRotationX((23.5 * Math.PI) / 180))
       .multiply(mTemp.makeRotationY(this.dayRotation * Math.PI * 2));
-    // this.mesh.rotateOnAxis(XPOS, Math.PI * 0.5);
-    // this.mesh.rotateOnAxis(XPOS, (23.5 * Math.PI) / 180);
-    // this.mesh.rotateOnAxis(axis, this.dayRotation * Math.PI * 2);
 
     // Get position in ecliptic coordinates.
     const position = this.position;

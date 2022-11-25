@@ -28,6 +28,8 @@ export class OrbitalElements {
   public ap: number = 0;
   /** True anomaly */
   public v: number = 0;
+  /** Mean anomaly */
+  public ma: number = 0;
 
   private h = new Vector3();
   private n = new Vector3();
