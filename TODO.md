@@ -1,7 +1,9 @@
 # TODO
 
+* Time control UI.
+  * Time display
+  * Time rate.
 * Ellipse math.
-  * Mean anomaly - motion along path
   * Time offset.
 * Planet orbit paths.
   * Elliptical
@@ -22,7 +24,6 @@
 * Rocket Elliptical Orbits.
 * Rocket transfer orbits.
 * Planet positions.
-* Time control UI.
 * Earth specular map
 * Earth bump map.
 * Launch complices.

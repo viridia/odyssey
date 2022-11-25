@@ -22,24 +22,35 @@ import { Stars } from './stars/Stars';
 import { Orrery } from './planets/Orrery';
 import { Planet } from './planets/Planet';
 import { Vehicle } from './vehicles/Vehicle';
+import { Accessor, createSignal, Setter } from 'solid-js';
 
 // const cameraOffset = new Vector3();
 
 /** Contains the three.js renderer and handles to important resources. */
 export class Simulator {
-  public readonly scene = new Scene();
-  public readonly camera: PerspectiveCamera;
-  public readonly renderer: WebGLRenderer;
+  // Camera variables
+  public viewTarget: Planet | null = null;
   public readonly viewCenter = new Vector3();
-  public readonly eclipticGroup = new Group();
+  public readonly camera: PerspectiveCamera;
   public cameraElevationAngle = Math.PI * 0.05;
   public cameraAzimuthAngle = 0;
   public readonly cameraPosition = new Vector3();
   public cameraDistance = 30_000_000;
-  // public viewAngle = 0;
+
+  // Rendering
+  public readonly renderer: WebGLRenderer;
+  public readonly scene = new Scene();
+  public readonly eclipticGroup = new Group();
+
   public readonly events = new EventBus<{ update: number }>();
   public readonly planets: Orrery;
-  public viewTarget: Planet | null = null;
+
+  public simTime = new Date().getTime() / 1000; // Current time in seconds
+  public readonly paused: Accessor<boolean>;
+  public readonly setPaused: Setter<boolean>;
+  public readonly speed: Accessor<number>;
+  public readonly setSpeed: Setter<number>;
+  public readonly timeScale = [1, 2.5, 10, 25, 1e2, 2.5e2, 1e3, 2.5e3, 1e4, 2.5e4, 1e5, 2.5e5, 1e6];
 
   private mount: HTMLElement | undefined;
   private frameId: number | null = null;
@@ -61,13 +72,10 @@ export class Simulator {
     this.createAmbientLight();
     this.renderer = this.createRenderer();
 
-    this.resize = new ResizeObserver(() => this.onWindowResize())
+    this.resize = new ResizeObserver(() => this.onWindowResize());
 
-    // new ResizeObserver(args => {
-    //   const cr = args[0].contentRect;
-    //   setBox({ width: cr.width, height: cr.height });
-    // }).observe(element);
-
+    [this.speed, this.setSpeed] = createSignal(0);
+    [this.paused, this.setPaused] = createSignal(true);
 
     this.scene.add(this.eclipticGroup);
 
@@ -193,18 +201,23 @@ export class Simulator {
     this.events.emit('update', deltaTime);
 
     this.planets.update(deltaTime);
-    this.vehicles.forEach(v => v.update(deltaTime));
+    this.vehicles.forEach(v => v.update());
     this.updateCamera();
     this.stars.update();
   }
 
-  /** Return the elapsed running time. */
-  public get time(): number {
-    return this.clock.elapsedTime;
+  public get simSpeed(): number {
+    return this.timeScale[this.speed()];
   }
+
+  /** Return the elapsed running time. */
+  // public get time(): number {
+  //   return this.clock.elapsedTime;
+  // }
 
   private animate() {
     const deltaTime = Math.min(this.clock.getDelta(), 0.1);
+    this.simTime += this.paused() ? 0 : deltaTime * this.simSpeed;
     this.updateScene(deltaTime);
     this.render();
     this.frameId = window.requestAnimationFrame(this.animate);

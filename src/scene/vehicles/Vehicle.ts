@@ -11,12 +11,12 @@ import {
 import { OrbitalElements } from '../../math/OrbitalElements';
 import { FlightPathOverlay } from '../overlays/FlightPathOverlay';
 import { CelestialBody } from '../planets/CelestialBody';
+import { getSimulator } from '../Simulator';
 
 export class Vehicle {
   // Position and velocity in ecliptic coords.
   public readonly position = new Vector3();
   public readonly velocity = new Vector3();
-  public counter = 0;
 
   // Position and velocity relative to current primary.
   public primary: CelestialBody | null = null;
@@ -31,10 +31,12 @@ export class Vehicle {
   private path = new FlightPathOverlay();
 
   private material: MeshStandardMaterial;
+  private lastUpdateTime = 0;
 
   constructor(public readonly name: string, parent: Object3D) {
     parent.add(this.group);
 
+    this.lastUpdateTime = getSimulator().simTime;
     this.material = new MeshStandardMaterial({
       color: new Color(0, 0, 1).convertSRGBToLinear(),
       emissive: new Color(0, 0, 0.5).convertSRGBToLinear(),
@@ -63,20 +65,21 @@ export class Vehicle {
     }
   }
 
-  public update(deltaTime: number) {
+  public update() {
     this.group.position.copy(this.position);
-    this.counter += deltaTime * 0.1;
     if (this.primary) {
+      const n = this.orbit.meanMotion(this.primary.mass);
+      const t = n * (getSimulator().simTime - this.lastUpdateTime);
       if (this.orbit.e < 1) {
         const m = this.orbit.meanAnomalyFromTrue(this.orbit.v);
-        const phi = MathUtils.euclideanModulo(this.counter + m, Math.PI * 2);
+        const phi = MathUtils.euclideanModulo(t + m, Math.PI * 2);
         const ta = this.orbit.trueAnomalyFromMean(phi);
         this.orbit.toInertial(this.position, ta);
         this.position.add(this.primary.position);
         this.group.position.copy(this.position);
       } else {
         const m = this.orbit.meanAnomalyFromTrue(this.orbit.v);
-        const phi = MathUtils.euclideanModulo(this.counter + m, Math.PI * 2);
+        const phi = MathUtils.euclideanModulo(t + m, Math.PI * 2);
         const ta = this.orbit.trueAnomalyFromMean(phi);
         this.orbit.toInertial(this.position, ta);
         this.position.add(this.primary.position);

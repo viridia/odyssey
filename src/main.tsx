@@ -4,10 +4,12 @@ import { render } from 'solid-js/web';
 import { createCameraController } from './createCameraController';
 import { Simulator } from './scene/Simulator';
 import 'dolmen/css/styles.css';
-import 'dolmen/css/theme/dark.css';
+import './theme.scss';
 import './root.scss';
-import { FastForward, FastRewind, MainMenu, PlayArrow } from './icons';
+import { MainMenu } from './icons';
 import github from './images/github.png';
+import { TimeDisplay } from './ui/TimeDisplay';
+import { TimeControl } from './ui/TimeControl';
 
 const simulator = new Simulator();
 
@@ -23,22 +25,12 @@ function Main() {
   });
 
   return (
-    <Page class="dm-theme-dark">
+    <Page class="dm-theme-space">
       <Page.Header class="page-header" gap="md">
         <Page.Title>Odyssey</Page.Title>
         <Spacer />
-        <div class="page-header-text">00/00/2022</div>
-        <div class="page-header-text">00:00:00</div>
-        <Button icon color="subtle">
-          <FastRewind />
-        </Button>
-        <Button icon color="subtle">
-          <PlayArrow />
-        </Button>
-        <Button icon color="subtle">
-          <FastForward />
-        </Button>
-        <div class="page-header-text">&times;10</div>
+        <TimeDisplay />
+        <TimeControl />
         <Spacer />
         <Button icon color="subtle">
           <MainMenu />

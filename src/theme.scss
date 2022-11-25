@@ -1,0 +1,104 @@
+@use 'sass:color';
+
+$coolgray50: #eff2f5;
+$coolgray100: #e0e6eb;
+$coolgray150: #d0d9e1;
+$coolgray200: #c1ccd7;
+$coolgray250: #b1bfcd;
+$coolgray300: #a2b3c3;
+$coolgray400: #8399af;
+$coolgray500: #63809c;
+$coolgray600: #50667c;
+$coolgray700: #3c4d5d;
+$coolgray750: #32404e;
+$coolgray800: #28333e;
+$coolgray850: #1e262f;
+$coolgray900: #141a1f;
+$coolgray950: #0a0d10;
+
+$primaryColor: #3f45d4;
+$dangerColor: #7d248a;
+$textHighlight: #6f6fcf66;
+
+.dm-theme-space {
+  // Flat surfaces - page, card, modal, header
+  --dm-color-elevation-0: #{$coolgray900};
+  --dm-color-elevation-1: #{$coolgray850};
+  --dm-color-elevation-2: #{$coolgray800};
+
+  // "Wells" are interactive regions such as input, list box, etc.
+  --dm-color-field-bg: #{$coolgray800};
+  --dm-color-field-border: #{$coolgray600};
+  --dm-color-field-border-slight: #{$coolgray700};
+  --dm-color-field-hover-border: #{$coolgray600};
+
+  // Text colors
+  --dm-color-text: #{$coolgray200};
+  --dm-color-text-dim: #{$coolgray500};
+  --dm-color-text-selection: white;
+  --dm-color-text-selection-bg: #{$textHighlight};
+  --dm-color-text-link: #{color.adjust($primaryColor, $lightness: 15%, $saturation: -10%)};
+
+  // Severities
+  --dm-color-success-text: #aea;
+  --dm-color-success-icon: #4a4;
+  --dm-color-success-bg: #223322;
+  --dm-color-info-text: #bbf;
+  --dm-color-info-icon: #66e;
+  --dm-color-info-bg: #333355;
+  --dm-color-warning-text: #eea;
+  --dm-color-warning-icon: #a80;
+  --dm-color-warning-bg: #333322;
+  --dm-color-error-text: #fbb;
+  --dm-color-error-icon: #d00;
+  --dm-color-error-bg: #332222;
+
+  // Colors for selected items (menus, list rows)
+  --dm-color-item-hover-bg: #{color.change($coolgray400, $alpha: 0.1)};
+  --dm-color-item-focus-bg: #{$coolgray700};
+  --dm-color-item-selected-text: white;
+  --dm-color-item-selected-bg: #{$primaryColor};
+
+  // Various dynamic colors
+  --dm-color-focus: #8183ff88;
+  --dm-color-shadow: black;
+  --dm-color-backdrop: #{color.change(black, $alpha: 0.3)};
+
+  --dm-color-btn-bg: #{$coolgray800};
+
+  // Buttons (also used by some other controls such as checkbox and radio)
+  --dm-color-btn-primary: #{$primaryColor};
+  --dm-color-btn-primary-text: #{color.adjust($primaryColor, $lightness: 40%)};
+  --dm-color-btn-primary-text-dim: #{color.adjust($primaryColor, $lightness: 25%)};
+
+  --dm-color-btn-danger: #{$dangerColor};
+  --dm-color-btn-danger-text: #{color.adjust($dangerColor, $lightness: 40%)};
+  --dm-color-btn-danger-text-dim: #{color.adjust($dangerColor, $lightness: 25%)};
+
+  --dm-color-btn-selected: #{$coolgray600};
+  --dm-color-btn-selected-contrast: #{$coolgray100};
+  --dm-color-btn-selected-contrast-dim: #{$coolgray200};
+
+  // Scrollbars
+  --dm-color-scrollbar: #{color.change($coolgray500, $alpha: 0.2)};
+  --dm-color-scrollbar-inactive: #{color.change($coolgray500, $alpha: 0.1)};
+
+  // Slider
+  --dm-color-slider-fill: #{$coolgray750};
+
+  // Toggle switches
+  --dm-color-toggle-fill: #{$coolgray700};
+  --dm-color-toggle-fill-checked: #118811;
+  --dm-color-toggle-slide-fill: linear-gradient(
+    to bottom,
+    #{$coolgray100} 0%,
+    #{$coolgray300} 100%
+  );
+
+  // Tooltips have their own color scheme, also used by callouts.
+  --dm-color-tooltip-bg: black;
+  --dm-color-tooltip-text: #{$coolgray300};
+
+  --dm-font-body: 'Exo 2', sans-serif;
+  --dm-font-title: 'Exo 2', sans-serif;
+}

@@ -143,6 +143,11 @@ export class OrbitalElements {
     return true;
   }
 
+  public meanMotion(m1: number, m2: number = 0) {
+    const mu = G * (m1 + m2);
+    return Math.sqrt(mu / Math.abs(this.a ** 3));
+  }
+
   public trueAnomalyFromEccentric(E: number) {
     const e = this.e;
 
