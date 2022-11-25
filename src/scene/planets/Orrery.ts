@@ -40,6 +40,7 @@ export class Orrery {
       luminosity: 0.4,
       luminousColor: new Color(0.5, 0.5, 1.0).convertSRGBToLinear(),
       luminousDistance: 10e8,
+      dayLength: 24 * 60 * 60,
     });
     this.earth.group.position.y = 147_770_000 * KM;
     this.earth.setPrimary(this.sol);
@@ -48,6 +49,7 @@ export class Orrery {
       mass: 7.34767309e22,
       oblateness: 0.00648,
       texture: moonTexture,
+      tidalLocked: true,
     });
     this.moon.group.position.x = 3.844e8;
     this.moon.group.position.applyAxisAngle(ZPOS, -1.5);
@@ -65,9 +67,16 @@ export class Orrery {
     this.mars.setPrimary(this.sol);
   }
 
-  public update(deltaTime: number) {
-    this.sol.update(deltaTime);
+  public simulate(deltaTime: number) {
+    this.sol.simulate(deltaTime);
     this.moon.group.position.applyAxisAngle(ZPOS, deltaTime * 0.01);
+    this.moon.position.applyAxisAngle(ZPOS, deltaTime * 0.01);
+  }
+
+  public animate(deltaTime: number) {
+    this.sol.animate(deltaTime);
+    // this.moon.group.position.applyAxisAngle(ZPOS, deltaTime * 0.01);
+    // this.moon.position.applyAxisAngle(ZPOS, deltaTime * 0.01);
   }
 
   public addToScene(scene: Object3D): this {

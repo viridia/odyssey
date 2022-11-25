@@ -1,7 +1,8 @@
 import { Group, Vector3 } from 'three';
 
 export interface ISatellite {
-  update(deltaTime: number): void;
+  simulate(deltaTime: number): void;
+  animate(deltaTime: number): void;
 }
 
 export class CelestialBody {

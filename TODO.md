@@ -1,8 +1,8 @@
 # TODO
 
 * Time control UI.
-  * Time display
-  * Time rate.
+  * Space to pause
+  * Need keyboard shortcuts
 * Ellipse math.
   * Time offset.
 * Planet orbit paths.

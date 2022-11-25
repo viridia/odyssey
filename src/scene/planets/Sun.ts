@@ -78,7 +78,11 @@ export class Sun extends CelestialBody {
     return this;
   }
 
-  public update(delta: number) {
-    this.satellites.forEach(sat => sat.update(delta));
+  public simulate(delta: number) {
+    this.satellites.forEach(sat => sat.simulate(delta));
+  }
+
+  public animate(delta: number) {
+    this.satellites.forEach(sat => sat.animate(delta));
   }
 }

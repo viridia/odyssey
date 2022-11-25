@@ -4,10 +4,10 @@ import { eccentricAnomalyFromMeanElliptic, eccentricAnomalyFromMeanHyperbolic } 
 
 /** @file
     References:
+    * http://control.asu.edu/Classes/MAE462/462Lecture05.pdf
+    * https://orbital-mechanics.space/time-since-periapsis-and-keplers-equation/hyperbolic-trajectories.html
     * https://en.wikipedia.org/wiki/Orbit_determination#Orbit_Determination_from_a_State_Vector
     * https://en.wikipedia.org/wiki/True_anomaly
-    * https://orbital-mechanics.space/time-since-periapsis-and-keplers-equation/hyperbolic-trajectories.html
-    * http://control.asu.edu/Classes/MAE462/462Lecture05.pdf
     * https://space.stackexchange.com/questions/20085/calculate-true-anomaly-at-future-point-in-time-with-hyperbolic-orbits
     * https://space.stackexchange.com/questions/54414/how-to-calculate-the-velocity-vector-in-the-case-of-a-hyperbolic-orbit
     * https://space.stackexchange.com/questions/24646/finding-x-y-z-vx-vy-vz-from-hyperbolic-orbital-elements

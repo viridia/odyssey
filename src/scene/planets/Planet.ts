@@ -3,6 +3,8 @@ import {
   BufferGeometry,
   Color,
   Material,
+  MathUtils,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
@@ -31,11 +33,13 @@ interface IPlanetOptions {
   luminosity?: number;
   luminousColor?: Color;
   luminousDistance?: number;
+  dayLength?: number;
+  tidalLocked?: true;
 }
 
 const loader = new TextureLoader();
 
-const axis = new Vector3(0, 1, 0);
+// const axis = new Vector3(0, 1, 0);
 
 export class Planet extends CelestialBody {
   public mesh: Mesh<BufferGeometry, MeshStandardMaterial>;
@@ -44,10 +48,11 @@ export class Planet extends CelestialBody {
   private atmoMesh?: Mesh<BufferGeometry, Material>;
   private atmoMaterial?: AtmosphereHaloMaterial;
   private sunlightDir = new Vector3();
-  // private timeOfDay = 0;
   private lpMaterial: MeshBasicMaterial;
   private lpMesh: Mesh<BufferGeometry, MeshBasicMaterial>;
-  // private dayLength = 24 * 60 * 60;
+
+  private dayLength = 0;
+  private dayRotation = 0;
   // private yearLength;
 
   // Need:
@@ -64,8 +69,6 @@ export class Planet extends CelestialBody {
     this.geometry = new SphereGeometry(radius, WIDTH_SEGMENTS, HEIGHT_SEGMENTS);
     this.mesh = new Mesh(this.geometry, this.material);
     this.mesh.scale.set(1, 1 + (options.oblateness ?? 0), 1);
-    this.mesh.rotateOnAxis(XPOS, Math.PI * 0.5);
-    this.mesh.rotateOnAxis(XPOS, (23.5 * Math.PI) / 180);
     // this.mesh.castShadow = true;
     // this.mesh.visible = false;
 
@@ -106,6 +109,8 @@ export class Planet extends CelestialBody {
       this.group.add(light);
     }
 
+    this.dayLength = options.dayLength ?? 0;
+
     // const orbit = new TranslucentLines();
     // orbit.setColor(new Color(0.2, 0.4, 0.0));
     // orbit.setOpacity(0.7, 0.1);
@@ -140,10 +145,27 @@ export class Planet extends CelestialBody {
     return this;
   }
 
-  public update(delta: number) {
+  public simulate(delta: number) {
+    // const sim = getSimulator();
+    if (this.dayLength > 0) {
+      this.dayRotation = MathUtils.euclideanModulo(this.dayRotation + delta / this.dayLength, 1);
+      this.mesh.matrixAutoUpdate = false;
+    }
+
+    this.satellites.forEach(sat => sat.simulate(delta));
+  }
+
+  public animate(delta: number) {
     const sim = getSimulator();
-    // this.timeOfDay += delta;
-    this.mesh.rotateOnAxis(axis, delta);
+    this.mesh.matrixAutoUpdate = false;
+    this.mesh.matrix
+      .identity()
+      .multiply(mTemp.makeRotationX(Math.PI * 0.5))
+      .multiply(mTemp.makeRotationX((23.5 * Math.PI) / 180))
+      .multiply(mTemp.makeRotationY(this.dayRotation * Math.PI * 2));
+    // this.mesh.rotateOnAxis(XPOS, Math.PI * 0.5);
+    // this.mesh.rotateOnAxis(XPOS, (23.5 * Math.PI) / 180);
+    // this.mesh.rotateOnAxis(axis, this.dayRotation * Math.PI * 2);
 
     // Get position in ecliptic coordinates.
     const position = this.position;
@@ -171,8 +193,9 @@ export class Planet extends CelestialBody {
     }
     this.lpMesh.scale.setScalar(dist / lodDistance);
 
-    this.satellites.forEach(sat => sat.update(delta));
+    this.satellites.forEach(sat => sat.animate(delta));
   }
 }
 
 const sunPosition = new Vector3();
+const mTemp = new Matrix4();

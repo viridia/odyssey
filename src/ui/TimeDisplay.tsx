@@ -8,8 +8,9 @@ export const TimeDisplay = () => {
   const [time, setTime] = createSignal<Date>(new Date(sim.simTime));
 
   createEffect(() => {
+    setTime(new Date(sim.simTime * 1000));
     onCleanup(
-      sim.events.subscribe('update', () => {
+      sim.events.subscribe('simulate', () => {
         setTime(new Date(sim.simTime * 1000));
       })
     );

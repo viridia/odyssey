@@ -42,7 +42,7 @@ export class Simulator {
   public readonly scene = new Scene();
   public readonly eclipticGroup = new Group();
 
-  public readonly events = new EventBus<{ update: number }>();
+  public readonly events = new EventBus<{ animate: number; simulate: number }>();
   public readonly planets: Orrery;
 
   public simTime = new Date().getTime() / 1000; // Current time in seconds
@@ -50,7 +50,7 @@ export class Simulator {
   public readonly setPaused: Setter<boolean>;
   public readonly speed: Accessor<number>;
   public readonly setSpeed: Setter<number>;
-  public readonly timeScale = [1, 2.5, 10, 25, 1e2, 2.5e2, 1e3, 2.5e3, 1e4, 2.5e4, 1e5, 2.5e5, 1e6];
+  public readonly timeScale = [1, 10, 1e2, 2.5e2, 1e3, 2.5e3, 1e4, 2.5e4, 1e5, 2.5e5, 1e6];
 
   private mount: HTMLElement | undefined;
   private frameId: number | null = null;
@@ -198,9 +198,13 @@ export class Simulator {
   /** Update the positions of any moving objects. */
   public updateScene(deltaTime: number) {
     // Run callbacks.
-    this.events.emit('update', deltaTime);
+    if (!this.paused()) {
+      this.events.emit('simulate', deltaTime * this.simSpeed);
+      this.planets.simulate(deltaTime * this.simSpeed);
+    }
+    this.events.emit('animate', deltaTime);
+    this.planets.animate(deltaTime);
 
-    this.planets.update(deltaTime);
     this.vehicles.forEach(v => v.update());
     this.updateCamera();
     this.stars.update();
