@@ -1,4 +1,4 @@
-import { Color, DoubleSide, ShaderMaterial, UniformsLib } from 'three';
+import { Color, FrontSide, ShaderMaterial, UniformsLib } from 'three';
 import { ShaderChunk } from 'three';
 import glsl from '../glsl';
 
@@ -40,6 +40,7 @@ const discFrag = glsl`
 uniform vec3 diffuse;
 uniform float nominalDistance;
 uniform float minDistance;
+uniform float opacity;
 
 varying vec2 vUV;
 varying float distance;
@@ -56,10 +57,9 @@ void main() {
   ${ShaderChunk.logdepthbuf_fragment}
   ${ShaderChunk.clipping_planes_fragment}
 
-  float opacity = smoothstep(distance, minDistance, nominalDistance);
-  float dist = max(0., (1. - length(vUV))) / 0.4;
-  dist = pow(dist, 5.);
-	vec4 diffuseColor = vec4(diffuse, dist * opacity);
+  float alpha = opacity * smoothstep(distance, minDistance, nominalDistance);
+  float dist = min(1., max(0., (1. - length(vUV))) / 0.4);
+	vec4 diffuseColor = vec4(diffuse, dist * alpha);
 
   ${ShaderChunk.map_fragment}
   ${ShaderChunk.alphatest_fragment}
@@ -79,12 +79,12 @@ export class DiscMaterial extends ShaderMaterial {
         scale: { value: 1 },
         nominalDistance: { value: 0 },
         minDistance: { value: 0 },
+        opacity: { value: 1 },
       },
       fragmentShader: discFrag,
       vertexShader: discVert,
-      side: DoubleSide,
+      side: FrontSide,
       transparent: true,
-      // blending: AdditiveBlending,
     });
   }
 }

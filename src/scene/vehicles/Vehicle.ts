@@ -9,8 +9,8 @@ import {
   Vector3,
 } from 'three';
 import { OrbitalElements } from '../../math/OrbitalElements';
-import { DiscMarker } from '../overlays/DiscMarker';
 import { FlightPathOverlay } from '../overlays/FlightPathOverlay';
+import { TranslucentDiscMarker } from '../overlays/TranslucentDiscMarker';
 import { CelestialBody } from '../planets/CelestialBody';
 
 export class Vehicle {
@@ -32,7 +32,7 @@ export class Vehicle {
 
   private material: MeshStandardMaterial;
 
-  private marker: DiscMarker;
+  private marker: TranslucentDiscMarker;
 
   constructor(public readonly name: string, parent: Object3D) {
     parent.add(this.group);
@@ -47,11 +47,11 @@ export class Vehicle {
     this.group.add(mesh);
 
     // Small LOD sphere to display when planet gets very small.
-    this.marker = new DiscMarker(this.group, {
-      radius: 0.003,
+    this.marker = new TranslucentDiscMarker(this.group, {
+      radius: 0.0035,
       color: new Color(0, 0.6, 0).convertSRGBToLinear(),
-      nominalDistance: 1e7,
-      minDistance: 1e6,
+      nominalDistance: 1e6,
+      minDistance: 1e5,
     });
   }
 
@@ -69,12 +69,10 @@ export class Vehicle {
 
   public calcOrbit() {
     if (this.primary) {
-      // TODO: ACC: This is not correct, we want to know the position of the primary
-      // at a given point in the future.
       r.copy(this.position).sub(this.primary.position);
       rDot.copy(this.velocity); //.sub(this.primary.velocity);
       this.orbit.fromStateVector(r, rDot, this.primary.mass);
-      this.orbit.ma = this.orbit.meanAnomalyFromTrue(this.orbit.v);
+      this.orbit.ma = -this.orbit.meanAnomalyFromTrue(this.orbit.v);
 
       this.path.update(this.primary, this.orbit);
     }

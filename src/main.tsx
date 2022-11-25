@@ -1,4 +1,4 @@
-import { Button, Page, Spacer } from 'dolmen';
+import { Button, Page, Spacer, Menu } from 'dolmen';
 import { createEffect, createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import { createCameraController } from './createCameraController';
@@ -32,9 +32,15 @@ function Main() {
         <TimeDisplay />
         <TimeControl />
         <Spacer />
-        <Button icon color="subtle">
-          <MainMenu />
-        </Button>
+        <Menu>
+          <Menu.Button icon color="subtle">
+            <MainMenu />
+          </Menu.Button>
+          <Menu.List placement="bottom-end" inset>
+            <Menu.Item checked>Display Trajectories</Menu.Item>
+            <Menu.Item>Display Axes</Menu.Item>
+          </Menu.List>
+        </Menu>
         <Button icon color="subtle">
           <img src={github} width={20} />
         </Button>

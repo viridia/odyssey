@@ -105,7 +105,7 @@ export class Simulator {
     vh3.setPrimary(this.planets.earth);
     vh3.position.copy(this.planets.earth.position);
     vh3.position.x += this.planets.earth.radius * 1.95;
-    vh3.velocity.set(200, 2588, 1500); // m/s
+    vh3.velocity.set(1200, 1588, 1500); // m/s
     vh3.calcOrbit();
     this.vehicles.push(vh3);
 
