@@ -22,23 +22,23 @@ export class Orrery {
     this.sol = new Sun('Sol', 696_340 * KM, {
       mass: 1.9891e30,
       atmosphereThickness: 5e9,
-      atmosphereColor: new Color(1.0, 1.0, 0.7),
+      atmosphereColor: new Color(1.0, 1.0, 0.7).convertSRGBToLinear(),
       atmosphereOpacity: 0.5,
       luminosity: 1.0,
-      luminousColor: new Color(1.0, 1.0, 1.0),
+      luminousColor: new Color(1.0, 1.0, 1.0).convertSRGBToLinear(),
       luminousDistance: 5_000_000_000 * KM,
     });
     // this.sun.addToScene(group);
 
-    this.earth = new Planet('Earth', 6_378 * KM, {
+    this.earth = new Planet('Earth', 6.378e6, {
       mass: MEarth,
       oblateness: 0.00335,
       texture: earthTexture,
       atmosphereThickness: 500_000,
-      atmosphereColor: new Color(0.5, 0.5, 1.0),
-      atmosphereOpacity: 0.3,
-      luminosity: 0.2,
-      luminousColor: new Color(0.5, 0.5, 1.0),
+      atmosphereColor: new Color(0.6, 0.6, 1.0).convertSRGBToLinear(),
+      atmosphereOpacity: 0.5,
+      luminosity: 0.4,
+      luminousColor: new Color(0.5, 0.5, 1.0).convertSRGBToLinear(),
       luminousDistance: 10e8,
     });
     this.earth.group.position.y = 147_770_000 * KM;
@@ -58,7 +58,7 @@ export class Orrery {
       oblateness: 0.00648,
       texture: marsTexture,
       atmosphereThickness: 200_000,
-      atmosphereColor: new Color(1.0, 0.7, 0.7),
+      atmosphereColor: new Color(1.0, 0.7, 0.7).convertSRGBToLinear(),
       atmosphereOpacity: 0.2,
     });
     this.mars.group.position.x = -600_378_100;

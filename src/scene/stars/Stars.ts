@@ -38,6 +38,7 @@ export class Stars {
     this.mesh.castShadow = false;
     this.mesh.position.set(0, 0, 0);
     this.mesh.rotateOnAxis(XPOS, Math.PI * 0.5);
+    this.mesh.rotateOnAxis(XPOS, (23.5 * Math.PI) / 180);
     this.mesh.updateMatrix();
 
     const loader = new TextureLoader();

@@ -1,5 +1,17 @@
 import { MathUtils, Matrix4, Vector3 } from 'three';
 import { G } from './constants';
+import { eccentricAnomalyFromMeanElliptic, eccentricAnomalyFromMeanHyperbolic } from './kepler';
+
+/** @file
+    References:
+    * https://en.wikipedia.org/wiki/Orbit_determination#Orbit_Determination_from_a_State_Vector
+    * https://en.wikipedia.org/wiki/True_anomaly
+    * https://orbital-mechanics.space/time-since-periapsis-and-keplers-equation/hyperbolic-trajectories.html
+    * http://control.asu.edu/Classes/MAE462/462Lecture05.pdf
+    * https://space.stackexchange.com/questions/20085/calculate-true-anomaly-at-future-point-in-time-with-hyperbolic-orbits
+    * https://space.stackexchange.com/questions/54414/how-to-calculate-the-velocity-vector-in-the-case-of-a-hyperbolic-orbit
+    * https://space.stackexchange.com/questions/24646/finding-x-y-z-vx-vy-vz-from-hyperbolic-orbital-elements
+ */
 
 const SMALL_NUMBER = 1e-15;
 
@@ -21,6 +33,7 @@ export class OrbitalElements {
   private n = new Vector3();
   private ev = new Vector3();
 
+  // Matrix used to transform from perifocal to inertial coordinates (relative to primary).
   private matrix = new Matrix4();
   private matrixNeedsUpdate = true;
 
@@ -53,13 +66,13 @@ export class OrbitalElements {
     let i = Math.atan2(Math.hypot(h.x, h.y), h.z);
 
     // Right ascension
-    // let raan = Math.atan2(h.x, -h.y);
-    let raan = Math.acos(n.x / n.length());
+    let raan = Math.atan2(h.x, -h.y);
+    // let raan = Math.acos(n.x / n.length());
     if (n.y < 0) {
       raan = Math.PI * 2 - raan;
     }
 
-    let argPe = Math.acos(n.dot(ev) / (n.length() * ev.length()));
+    let argPe = angleBetween(n, ev);
     if (ev.z < 0) {
       argPe = Math.PI * 2 - argPe;
     }
@@ -72,7 +85,7 @@ export class OrbitalElements {
           v = Math.PI * 2 - v;
         }
       } else {
-        v = Math.acos(n.dot(pos) / (n.length() * pos.length()));
+        v = angleBetween(n, pos);
         if (n.dot(vel) > 0) {
           v = 2 * Math.PI - v;
         }
@@ -81,12 +94,12 @@ export class OrbitalElements {
       if (ev.z < 0) {
         argPe = 2 * Math.PI - argPe;
       }
-      const vCos = MathUtils.clamp(ev.dot(pos) / (ev.length() * pos.length()), -1, 1);
-      v = Math.acos(vCos);
+      v = angleBetween(ev, pos);
       if (pos.dot(vel) < 0) {
         v = Math.PI * 2 - v;
       }
     }
+    // console.log(v);
 
     this.a = a;
     this.e = e;
@@ -101,68 +114,86 @@ export class OrbitalElements {
   /** Compute the orbital position at a given true anomaly.
    * @param ta The true anomaly
    * @param out Position in perifocal coordinates.
+   * @returns True if the position is valid (which can be false for hyperbolic orbits
+   *    when the true anomaly is out of range)
    */
-  public toPerifocal(out: Vector3, ta?: number) {
-    const v = ta ?? this.v;
-    const p = this.a * (1 - this.e ** 2);
-    const m = p / (1 + this.e * Math.cos(v));
-    const x = Math.cos(v) * m;
-    const y = Math.sin(v) * m;
+  public toPerifocal(out: Vector3, ta?: number): boolean {
+    const { e, a, v } = this;
+    const f = ta ?? v;
+    const p = a * (1 - e ** 2);
+    const m = p / (1 + e * Math.cos(f));
+    if (m <= 0) {
+      return false;
+    }
+    const x = Math.cos(f) * m;
+    const y = Math.sin(f) * m;
     out.set(x, y, 0);
+    return true;
   }
 
   /** Compute the orbital position, in rectilinear coordinates, at true anomaly ta. */
-  public toIntertial(out: Vector3, ta?: number) {
-    this.toPerifocal(out, ta ?? this.v);
+  public toInertial(out: Vector3, ta?: number): boolean {
+    if (!this.toPerifocal(out, ta ?? this.v)) {
+      return false;
+    }
     if (this.matrixNeedsUpdate) {
       this.updateMatrix();
     }
     out.applyMatrix4(this.matrix);
+    return true;
   }
 
   public trueAnomalyFromEccentric(E: number) {
-    return (
-      2 *
-      Math.atan2(Math.sqrt(1 + this.e) * Math.sin(E / 2), Math.sqrt(1 - this.e) * Math.cos(E / 2))
-    );
+    const e = this.e;
+
+    // Hyperbolic
+    if (e > 1) {
+      const e2 = Math.sqrt((e + 1) / (e - 1));
+      return MathUtils.euclideanModulo(2 * Math.atan(e2 * Math.tanh(E / 2)), Math.PI * 2);
+    }
+
+    const B = e / (1 + Math.sqrt(1 - e ** 2));
+    return E + 2 * Math.atan2(B * Math.sin(E), 1 - B * Math.cos(E));
   }
 
-  /* Convert mean anomaly to eccentric anomaly.
-  Implemented from [A Practical Method for Solving the Kepler Equation][1]
-  by Marc A. Murison from the U.S. Naval Observatory
-  [1]: http://murison.alpheratz.net/dynamics/twobody/KeplerIterations_summary.pdf
-  */
-  public eccentricAnomalyFromMean(M: number, tolerance: number = 1e-14): number {
+  public eccentricAnomalyFromTrue(ta: number) {
     const e = this.e;
-    const Mnorm = MathUtils.euclideanModulo(M, 2 * Math.PI);
-    let E0 =
-      M +
-      ((-1 / 2) * e ** 3 + e + (e ** 2 + (3 / 2) * Math.cos(M) * e ** 3) * Math.cos(M)) *
-        Math.sin(M);
-    let dE = tolerance + 1;
-    let count = 0;
-    let E = 0;
-    while (dE > tolerance) {
-      const t1 = Math.cos(E0);
-      const t2 = -1 + e * t1;
-      const t3 = Math.sin(E0);
-      const t4 = e * t3;
-      const t5 = -E0 + t4 + Mnorm;
-      const t6 = t5 / (((1 / 2) * t5 * t4) / t2 + t2);
-      E = E0 - t5 / (((1 / 2) * t3 - (1 / 6) * t1 * t6) * e * t6 + t2);
-      dE = Math.abs(E - E0);
-      E0 = E;
-      count += 1;
-      if (count >= 100) {
-        // raise ConvergenceError('Did not converge after {n} iterations. (e={e!r}, M={M!r})'.format(n=MAX_ITERATIONS, e=e, M=M))
-      }
+
+    // Hyperbolic
+    if (e > 1) {
+      return 2 * Math.atanh(Math.sqrt((e - 1) / (e + 1)) * Math.tan(ta / 2));
     }
-    return E;
+
+    // Elliptical or circular
+    let E = Math.atan2(Math.sqrt(1 - e ** 2) * Math.sin(ta), e + Math.cos(ta));
+    return MathUtils.euclideanModulo(E, Math.PI * 2);
+  }
+
+  public meanAnomalyFromEccentric(E: number) {
+    const { e } = this;
+    if (e >= 1) {
+      return e * Math.sinh(E) - E;
+    }
+    return E - e * Math.sin(E);
+  }
+
+  /** Convert mean anomaly to eccentric anomaly. */
+  public eccentricAnomalyFromMean(M: number, tolerance: number = 1e-14): number {
+    const { e } = this;
+    if (e > 1) {
+      return eccentricAnomalyFromMeanHyperbolic(e, M, tolerance);
+    }
+    return eccentricAnomalyFromMeanElliptic(e, M, tolerance);
   }
 
   public trueAnomalyFromMean(m: number, tolerance: number = 1e-14): number {
     const E = this.eccentricAnomalyFromMean(m, tolerance);
     return this.trueAnomalyFromEccentric(E);
+  }
+
+  public meanAnomalyFromTrue(ta: number): number {
+    const E = this.eccentricAnomalyFromTrue(ta);
+    return this.meanAnomalyFromEccentric(E);
   }
 
   public updateMatrix() {
@@ -173,3 +204,10 @@ export class OrbitalElements {
   }
 }
 const mTemp = new Matrix4();
+
+function angleBetween(a: Vector3, b: Vector3): number {
+  const denominator = Math.sqrt(a.lengthSq() * b.lengthSq());
+  if (denominator === 0) return Math.PI / 2;
+  const theta = a.dot(b) / denominator;
+  return Math.acos(MathUtils.clamp(theta, -1, 1));
+}

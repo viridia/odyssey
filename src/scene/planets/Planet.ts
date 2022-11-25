@@ -8,6 +8,7 @@ import {
   MeshStandardMaterial,
   PointLight,
   SphereGeometry,
+  sRGBEncoding,
   TextureLoader,
   Vector3,
 } from 'three';
@@ -43,7 +44,7 @@ export class Planet extends CelestialBody {
   private atmoMesh?: Mesh<BufferGeometry, Material>;
   private atmoMaterial?: AtmosphereHaloMaterial;
   private sunlightDir = new Vector3();
-  private timeOfDay = 0;
+  // private timeOfDay = 0;
   private lpMaterial: MeshBasicMaterial;
   private lpMesh: Mesh<BufferGeometry, MeshBasicMaterial>;
   // private dayLength = 24 * 60 * 60;
@@ -52,29 +53,19 @@ export class Planet extends CelestialBody {
   // Need:
   // axis direction
 
-  constructor(
-    name: string,
-    radius: number,
-    options: IPlanetOptions = {}
-  ) {
+  constructor(name: string, radius: number, options: IPlanetOptions = {}) {
     super(name, radius, options.mass ?? 1);
-    this.material = new MeshStandardMaterial({
-      map: options.texture ? loader.load(options.texture) : undefined,
-    });
+    this.material = new MeshStandardMaterial();
+    if (options.texture) {
+      const tx = loader.load(options.texture);
+      tx.encoding = sRGBEncoding;
+      this.material.map = tx;
+    }
     this.geometry = new SphereGeometry(radius, WIDTH_SEGMENTS, HEIGHT_SEGMENTS);
-    // if (options.oblateness) {
-    //   const position = this.geometry.getAttribute('position');
-    //   invariant(position);
-    //   for (let i = 0, ct = position.count; i < ct; i++) {
-    //     const y = position.getY(i);
-    //     position.setY(i, y * (1 - options.oblateness));
-    //   }
-    // }
-
     this.mesh = new Mesh(this.geometry, this.material);
     this.mesh.scale.set(1, 1 + (options.oblateness ?? 0), 1);
     this.mesh.rotateOnAxis(XPOS, Math.PI * 0.5);
-    this.mesh.rotateOnAxis(XPOS, 23 * Math.PI / 180);
+    this.mesh.rotateOnAxis(XPOS, (23.5 * Math.PI) / 180);
     // this.mesh.castShadow = true;
     // this.mesh.visible = false;
 
@@ -151,7 +142,7 @@ export class Planet extends CelestialBody {
 
   public update(delta: number) {
     const sim = getSimulator();
-    this.timeOfDay += delta;
+    // this.timeOfDay += delta;
     this.mesh.rotateOnAxis(axis, delta);
 
     // Get position in ecliptic coordinates.

@@ -10,6 +10,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc && vite build",
+    "build:svg": "svgr --template ./scripts/svg-template.cjs --typescript artwork/icons/ -d src/icons/",
     "convert:stars": "ts-node --esm scripts/star-convert.ts",
     "dev": "vite",
     "format": "prettier --config .prettierrc.cjs --write ./src",
@@ -19,6 +20,7 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "@svgr/cli": "^6.5.1",
     "babel-preset-solid": "^1.6.2",
     "binary-parser": "^2.2.1",
     "eslint": "^8.28.0",
@@ -34,6 +36,7 @@
   },
   "dependencies": {
     "@types/three": "^0.146.0",
+    "dolmen": "^0.2.0",
     "solid-js": "^1.6.2",
     "three": "^0.146.0"
   }

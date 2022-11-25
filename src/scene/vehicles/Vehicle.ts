@@ -30,16 +30,18 @@ export class Vehicle {
   // array of orbital elements with time ranges.
   private path = new FlightPathOverlay();
 
+  private material: MeshStandardMaterial;
+
   constructor(public readonly name: string, parent: Object3D) {
     parent.add(this.group);
 
-    const material = new MeshStandardMaterial({
-      color: new Color(0, 0, 1),
-      emissive: new Color(0, 0, 0.5),
+    this.material = new MeshStandardMaterial({
+      color: new Color(0, 0, 1).convertSRGBToLinear(),
+      emissive: new Color(0, 0, 0.5).convertSRGBToLinear(),
       depthTest: false,
     });
-    const sphere = new SphereGeometry(1e5, 64, 32);
-    const mesh = new Mesh(sphere, material);
+    const sphere = new SphereGeometry(3e5, 64, 32);
+    const mesh = new Mesh(sphere, this.material);
     this.group.add(mesh);
   }
 
@@ -65,11 +67,24 @@ export class Vehicle {
     this.group.position.copy(this.position);
     this.counter += deltaTime * 0.1;
     if (this.primary) {
-      const phi = MathUtils.euclideanModulo(this.counter, Math.PI * 2);
-      const ta = this.orbit.trueAnomalyFromMean(phi + this.orbit.v);
-      this.orbit.toIntertial(this.position, ta);
-      this.position.add(this.primary.position);
-      this.group.position.copy(this.position);
+      if (this.orbit.e < 1) {
+        const m = this.orbit.meanAnomalyFromTrue(this.orbit.v);
+        const phi = MathUtils.euclideanModulo(this.counter + m, Math.PI * 2);
+        const ta = this.orbit.trueAnomalyFromMean(phi);
+        this.orbit.toInertial(this.position, ta);
+        this.position.add(this.primary.position);
+        this.group.position.copy(this.position);
+      } else {
+        const m = this.orbit.meanAnomalyFromTrue(this.orbit.v);
+        const phi = MathUtils.euclideanModulo(this.counter + m, Math.PI * 2);
+        const ta = this.orbit.trueAnomalyFromMean(phi);
+        this.orbit.toInertial(this.position, ta);
+        this.position.add(this.primary.position);
+        this.group.position.copy(this.position);
+      }
+
+      // const distanceToPrimary = this.position.distanceTo(this.primary.position);
+      // this.material.color = distanceToPrimary > this.primary.radius ? GREEN : RED;
     }
   }
 }

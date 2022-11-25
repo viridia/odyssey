@@ -48,6 +48,8 @@ export class Simulator {
   private stars: Stars;
   private vehicles: Vehicle[] = [];
 
+  private resize: ResizeObserver;
+
   // private sphereBody?: RigidBody;
 
   constructor() {
@@ -58,6 +60,14 @@ export class Simulator {
 
     this.createAmbientLight();
     this.renderer = this.createRenderer();
+
+    this.resize = new ResizeObserver(() => this.onWindowResize())
+
+    // new ResizeObserver(args => {
+    //   const cr = args[0].contentRect;
+    //   setBox({ width: cr.width, height: cr.height });
+    // }).observe(element);
+
 
     this.scene.add(this.eclipticGroup);
 
@@ -99,13 +109,21 @@ export class Simulator {
     vh4.calcOrbit();
     this.vehicles.push(vh4);
 
+    const vh5 = new Vehicle('TestVehicle5', this.scene);
+    vh5.setPrimary(this.planets.earth);
+    vh5.position.copy(this.planets.earth.position);
+    vh5.position.x += this.planets.earth.radius * 2.1;
+    vh5.velocity.set(0, 7988, 50); // m/s
+    vh5.calcOrbit();
+    this.vehicles.push(vh5);
+
     this.updateCamera();
   }
 
   /** Attach the renderer to the DOM. */
   public async attach(mount: HTMLElement) {
     this.mount = mount;
-    window.addEventListener('resize', this.onWindowResize.bind(this));
+    this.resize.observe(mount);
     mount.appendChild(this.renderer.domElement);
     this.onWindowResize();
 
@@ -149,7 +167,7 @@ export class Simulator {
       cancelAnimationFrame(this.frameId);
       this.frameId = null;
     }
-    window.removeEventListener('resize', this.onWindowResize);
+    this.resize.disconnect();
     this.mount?.removeChild(this.renderer.domElement);
   }
 
@@ -202,10 +220,10 @@ export class Simulator {
     if (this.mount) {
       const width = this.mount.clientWidth;
       const height = this.mount.clientHeight;
-      this.camera.aspect = width / height;
-      this.camera.updateProjectionMatrix();
       this.renderer.setSize(width, height);
       this.renderer.render(this.scene, this.camera);
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
     }
   }
 

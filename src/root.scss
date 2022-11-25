@@ -1,6 +1,7 @@
 html {
   height: 100%;
   overflow: hidden;
+  background-color: black;
 }
 
 #app {
@@ -15,11 +16,36 @@ html {
   overflow: hidden;
 }
 
+.dm-theme-dark {
+  background-color: transparent;
+  --dm-font-body: 'Exo 2', sans-serif;
+  --dm-font-title: 'Exo 2', sans-serif;
+}
+
+.page-header {
+  background-color: black;
+}
+
+.page-header-text {
+  position: relative;
+  height: 1rem;
+  line-height: 1rem;
+  font-size: 0.9rem;
+  top: -1px;
+  color: var(--dm-color-text-dim);
+}
+
+.page-content {
+  position: relative;;
+  background-color: transparent;
+}
+
 .viewport {
   position: absolute;
+  padding: 0;
   left: 0;
-  right: 0;
   top: 0;
+  right: 0;
   bottom: 0;
 }
 

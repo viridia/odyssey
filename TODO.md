@@ -3,10 +3,12 @@
 * Ellipse math.
   * Mean anomaly - motion along path
   * Time offset.
-* Bug: Sun is apparent diameter is incorrect.
 * Planet orbit paths.
   * Elliptical
   * Transfer
+* Helpers:
+  * Ecliptic
+  * Geocentric
 * Planetary Day Length / Offset
 * Jupiter
 * Milky Way
