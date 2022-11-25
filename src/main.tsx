@@ -7,7 +7,7 @@ import 'dolmen/css/styles.css';
 import 'dolmen/css/theme/dark.css';
 import './root.scss';
 import { FastForward, FastRewind, MainMenu, PlayArrow } from './icons';
-import gitHub from './images/gitHub.png';
+import github from './images/github.png';
 
 const simulator = new Simulator();
 
@@ -44,7 +44,7 @@ function Main() {
           <MainMenu />
         </Button>
         <Button icon color="subtle">
-          <img src={gitHub} width={20} />
+          <img src={github} width={20} />
         </Button>
       </Page.Header>
       <Page.Content class="page-content">
