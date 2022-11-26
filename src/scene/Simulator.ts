@@ -6,10 +6,10 @@ window; // import {
 //   World,
 // } from '@dimforge/rapier3d-compat';
 import {
+  AmbientLight,
   Clock,
   Color,
   Group,
-  HemisphereLight,
   PerspectiveCamera,
   Scene,
   sRGBEncoding,
@@ -24,6 +24,7 @@ import { Planet } from './planets/Planet';
 import { Vehicle } from './vehicles/Vehicle';
 import { Accessor, createSignal, Setter } from 'solid-js';
 import { ISettings } from '../lib/createUserSettings';
+import { Compass } from './overlays/Compass';
 
 // const cameraOffset = new Vector3();
 
@@ -48,6 +49,7 @@ export class Simulator {
 
   public readonly events = new EventBus<{ animate: number; simulate: number }>();
   public readonly planets: Orrery;
+  public readonly compass: Compass;
 
   public simTime = new Date().getTime() / 1000; // Current time in seconds
   public readonly paused: Accessor<boolean>;
@@ -91,6 +93,8 @@ export class Simulator {
     this.planets.simulate(0);
     this.planets.addToScene(this.eclipticGroup);
     this.viewTarget = this.planets.earth;
+
+    this.compass = new Compass(this.scene);
 
     const vh = new Vehicle('TestVehicle', this.scene);
     vh.setPrimary(this.planets.earth);
@@ -255,10 +259,9 @@ export class Simulator {
   }
 
   public createAmbientLight() {
-    const light = new HemisphereLight(
+    const light = new AmbientLight(
       new Color(0xb1e1ff).multiplyScalar(0.2).convertSRGBToLinear(),
-      new Color(0xb97a20).multiplyScalar(0.2).convertSRGBToLinear(),
-      0.3
+      0.2
     );
     this.scene.add(light);
     return light;

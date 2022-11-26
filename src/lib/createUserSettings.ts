@@ -5,6 +5,7 @@ import { createLocalStorageStore } from './createLocalStorageStore';
 export interface ISettings {
   showHelp?: boolean;
   showTrajectories?: boolean;
+  showCompass?: boolean;
 }
 
 export const UserSettingsContext = createContext<[Store<ISettings>, SetStoreFunction<ISettings>]>();
@@ -20,4 +21,5 @@ export const useUserSettings = () => {
 export const createUserSettings = () =>
   createLocalStorageStore<ISettings>('settings', {
     showTrajectories: true,
+    showCompass: true,
   });

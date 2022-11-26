@@ -51,7 +51,14 @@ function Main() {
                 >
                   Display Trajectories
                 </Menu.Item>
-                <Menu.Item disabled>Display Axes</Menu.Item>
+                <Menu.Item
+                  checked={settings.showCompass}
+                  onClick={() => {
+                    setSettings('showCompass', show => !show);
+                  }}
+                >
+                  Display Compass
+                </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
                   onClick={() => {
