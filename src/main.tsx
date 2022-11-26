@@ -2,7 +2,6 @@ import { Button, Page, Spacer, Menu } from 'dolmen';
 import { KeysManager, KeysManagerContext } from 'dolmen-keys';
 import { createEffect, createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
-import { createCameraController } from './createCameraController';
 import { Simulator } from './scene/Simulator';
 import 'dolmen/css/styles.css';
 import './theme.scss';
@@ -13,13 +12,12 @@ import { TimeDisplay } from './ui/TimeDisplay';
 import { TimeControl } from './ui/TimeControl';
 import { createUserSettings, UserSettingsContext } from './lib/createUserSettings';
 import { HelpDialog } from './ui/HelpDialog';
-import { KeyboardNavigationControls } from './ui/KeyboardNavigationControls';
+import { NavigationControls } from './ui/NavigationControls';
 
 function Main() {
   const [settings, setSettings] = createUserSettings();
   const simulator = new Simulator(settings);
   const [viewport, setViewport] = createSignal<HTMLElement>();
-  const controllerAttrs = createCameraController(simulator);
   const keyMgr = new KeysManager();
 
   createEffect(() => {
@@ -32,7 +30,7 @@ function Main() {
   return (
     <UserSettingsContext.Provider value={[settings, setSettings]}>
       <KeysManagerContext.Provider value={keyMgr}>
-        <KeyboardNavigationControls />
+        <NavigationControls viewport={viewport()} />
         <Page class="dm-theme-space">
           <Page.Header class="page-header" gap="md">
             <Page.Title>Odyssey</Page.Title>
@@ -69,7 +67,7 @@ function Main() {
             </Button.Link>
           </Page.Header>
           <Page.Content class="page-content">
-            <div {...controllerAttrs} class="viewport" ref={setViewport} />
+            <div class="viewport" ref={setViewport} />
           </Page.Content>
           <HelpDialog />
         </Page>

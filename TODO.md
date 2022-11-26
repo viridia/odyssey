@@ -9,8 +9,10 @@
 * Axes Helpers:
   * Ecliptic
   * Geocentric
+* Display orbit semi-major axis
 * Planetary Day Length / Offset
-* Jupiter
+* Jupiter and other planets.
+* Earth orbital eccentricity.
 * Milky Way
 * Axial Tilt (for planets other than earth)
 * Saturn / Rings
