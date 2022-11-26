@@ -27,6 +27,9 @@ import { ISettings } from '../lib/createUserSettings';
 
 // const cameraOffset = new Vector3();
 
+export const MIN_CAMERA_DISTANCE = 100;
+export const MAX_CAMERA_DISTANCE = 5_000_000_000_000; // A little larger than pluto's orbit
+
 /** Contains the three.js renderer and handles to important resources. */
 export class Simulator {
   // Camera variables

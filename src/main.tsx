@@ -13,11 +13,11 @@ import { TimeDisplay } from './ui/TimeDisplay';
 import { TimeControl } from './ui/TimeControl';
 import { createUserSettings, UserSettingsContext } from './lib/createUserSettings';
 import { HelpDialog } from './ui/HelpDialog';
-
-const [settings, setSettings] = createUserSettings();
-const simulator = new Simulator(settings);
+import { KeyboardNavigationControls } from './ui/KeyboardNavigationControls';
 
 function Main() {
+  const [settings, setSettings] = createUserSettings();
+  const simulator = new Simulator(settings);
   const [viewport, setViewport] = createSignal<HTMLElement>();
   const controllerAttrs = createCameraController(simulator);
   const keyMgr = new KeysManager();
@@ -32,6 +32,7 @@ function Main() {
   return (
     <UserSettingsContext.Provider value={[settings, setSettings]}>
       <KeysManagerContext.Provider value={keyMgr}>
+        <KeyboardNavigationControls />
         <Page class="dm-theme-space">
           <Page.Header class="page-header" gap="md">
             <Page.Title>Odyssey</Page.Title>

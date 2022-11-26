@@ -1,14 +1,12 @@
 # TODO
 
-* Time control UI.
-  * Space to pause
-  * Need keyboard shortcuts
 * Ellipse math.
   * Time offset.
+* Text annotations
 * Planet orbit paths.
   * Elliptical
   * Transfer
-* Helpers:
+* Axes Helpers:
   * Ecliptic
   * Geocentric
 * Planetary Day Length / Offset
@@ -28,7 +26,6 @@
 * Earth bump map.
 * Launch complices.
 * Collisions
-* Text annotations
 
 # Notes
 

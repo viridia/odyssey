@@ -8,7 +8,6 @@ import { isServer } from 'solid-js/web';
 export const createLocalStorageStore = <T extends object>(storageKey: string, initialValue: T) => {
   try {
     const json = localStorage.getItem(storageKey);
-    console.log('settings', json);
     if (typeof json === 'string' && json.length > 0) {
       const parsed = JSON.parse(json);
       if (typeof parsed === 'object') {

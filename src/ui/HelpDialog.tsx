@@ -1,7 +1,14 @@
-import { Button, Badge, Modal, Group, TextSpan, createCssTransition } from 'dolmen';
+import { Button, Badge, Modal, Group, createCssTransition } from 'dolmen';
 import { createShortcuts } from 'dolmen-keys';
-import { Show, VoidComponent } from 'solid-js';
+import { ParentComponent, Show, VoidComponent } from 'solid-js';
 import { useUserSettings } from '../lib/createUserSettings';
+
+const Shortcut: ParentComponent<{ key: string }> = props => (
+  <Group gap="md">
+    <Badge color="#3c4d5d">{props.key}</Badge>
+    <span>{props.children}</span>
+  </Group>
+);
 
 export const HelpDialog: VoidComponent = () => {
   const [settings, setSettings] = useUserSettings();
@@ -27,21 +34,31 @@ export const HelpDialog: VoidComponent = () => {
           <div>Keyboard Shortcuts</div>
           <ul>
             <li>
-              <Group gap="md">
-                <Badge color="#3c4d5d">space</Badge>
-                <span>pause simulation</span>
-              </Group>
+              <Shortcut key="space">pause simulation</Shortcut>
             </li>
             <li>
-              <Group gap="md">
-                <Badge color="#3c4d5d">[</Badge>
-                <TextSpan>reduce speed</TextSpan>
-              </Group>
+              <Shortcut key="[">speed up</Shortcut>
             </li>
             <li>
-              <Group gap="md">
-                <Badge color="#3c4d5d">]</Badge>increase speed
-              </Group>
+              <Shortcut key="]">slow down</Shortcut>
+            </li>
+            <li>
+              <Shortcut key="j">orbit camera left</Shortcut>
+            </li>
+            <li>
+              <Shortcut key="l">orbit camera right</Shortcut>
+            </li>
+            <li>
+              <Shortcut key="i">increase camera elevation</Shortcut>
+            </li>
+            <li>
+              <Shortcut key="k">decrease camera elevation</Shortcut>
+            </li>
+            <li>
+              <Shortcut key=",">zoom out</Shortcut>
+            </li>
+            <li>
+              <Shortcut key=".">zoom in</Shortcut>
             </li>
           </ul>
         </Modal.Body>

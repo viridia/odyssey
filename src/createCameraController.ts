@@ -1,9 +1,6 @@
 import { JSX } from 'solid-js/jsx-runtime';
 import { MathUtils } from 'three';
-import { Simulator } from './scene/Simulator';
-
-const MIN_CAMERA_DISTANCE = 100;
-const MAX_CAMERA_DISTANCE = 5_000_000_000_000; // A little larger than pluto's orbit
+import { MAX_CAMERA_DISTANCE, MIN_CAMERA_DISTANCE, Simulator } from './scene/Simulator';
 
 export const createCameraController = (sim: Simulator): JSX.HTMLAttributes<HTMLElement> => {
   let dragging = false;
