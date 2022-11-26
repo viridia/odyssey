@@ -39,6 +39,7 @@
     "dolmen": "^0.2.1",
     "dolmen-keys": "^0.0.5",
     "solid-js": "^1.6.2",
-    "three": "^0.146.0"
+    "three": "^0.146.0",
+    "troika-three-text": "^0.46.4"
   }
 }

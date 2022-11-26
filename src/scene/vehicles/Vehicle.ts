@@ -10,8 +10,10 @@ import {
 } from 'three';
 import { OrbitalElements } from '../../math/OrbitalElements';
 import { FlightPathOverlay } from '../overlays/FlightPathOverlay';
+import { createLabel, TextLabel } from '../overlays/Label';
 import { TranslucentDiscMarker } from '../overlays/TranslucentDiscMarker';
 import { CelestialBody } from '../planets/CelestialBody';
+import { getSimulator } from '../Simulator';
 
 export class Vehicle {
   // Position and velocity in ecliptic coords.
@@ -33,6 +35,7 @@ export class Vehicle {
   private material: MeshStandardMaterial;
 
   private marker: TranslucentDiscMarker;
+  private label: TextLabel;
 
   constructor(public readonly name: string, parent: Object3D) {
     parent.add(this.group);
@@ -53,12 +56,17 @@ export class Vehicle {
       nominalDistance: 1e6,
       minDistance: 1e5,
     });
+
+    this.label = createLabel(name);
+    this.group.add(this.label);
   }
 
   public dispose() {
     // TODO: dispose geometry.
     this.material.dispose();
     this.marker.dispose();
+    this.label.removeFromParent();
+    this.label.dispose();
   }
 
   public setPrimary(primary: CelestialBody) {
@@ -104,7 +112,11 @@ export class Vehicle {
   }
 
   public animate() {
+    const sim = getSimulator();
     this.group.position.copy(this.position);
+    const distToCamera = sim.camera.position.distanceTo(this.position);
+    this.label.quaternion.copy(sim.camera.quaternion);
+    this.label.scale.setScalar(distToCamera / 2e7);
     this.path.animate();
   }
 }

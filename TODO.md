@@ -1,14 +1,9 @@
 # TODO
 
-* Ellipse math.
-  * Time offset.
 * Text annotations
 * Planet orbit paths.
   * Elliptical
   * Transfer
-* Axes Helpers:
-  * Ecliptic
-  * Geocentric
 * Display orbit semi-major axis
 * Planetary Day Length / Offset
 * Jupiter and other planets.
