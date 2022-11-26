@@ -12,6 +12,7 @@ import { OrbitalElements } from '../../math/OrbitalElements';
 import { FlightPathOverlay } from '../overlays/FlightPathOverlay';
 import { TranslucentDiscMarker } from '../overlays/TranslucentDiscMarker';
 import { CelestialBody } from '../planets/CelestialBody';
+import { getSimulator } from '../Simulator';
 
 export class Vehicle {
   // Position and velocity in ecliptic coords.
@@ -105,6 +106,7 @@ export class Vehicle {
 
   public animate() {
     this.group.position.copy(this.position);
+    this.path.animate();
   }
 }
 

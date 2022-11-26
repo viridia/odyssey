@@ -1,4 +1,4 @@
-// import {
+window; // import {
 //   CoefficientCombineRule,
 //   ColliderDesc,
 //   RigidBody,
@@ -23,6 +23,7 @@ import { Orrery } from './planets/Orrery';
 import { Planet } from './planets/Planet';
 import { Vehicle } from './vehicles/Vehicle';
 import { Accessor, createSignal, Setter } from 'solid-js';
+import { ISettings } from '../lib/createUserSettings';
 
 // const cameraOffset = new Vector3();
 
@@ -63,7 +64,7 @@ export class Simulator {
 
   // private sphereBody?: RigidBody;
 
-  constructor() {
+  constructor(public readonly settings: ISettings) {
     simulator = this;
 
     this.animate = this.animate.bind(this);
@@ -72,7 +73,10 @@ export class Simulator {
     this.createAmbientLight();
     this.renderer = this.createRenderer();
 
-    this.resize = new ResizeObserver(() => this.onWindowResize());
+    this.resize = new ResizeObserver(() => {
+      this.onWindowResize();
+      this.renderer.render(this.scene, this.camera);
+    });
 
     [this.speed, this.setSpeed] = createSignal(0);
     [this.paused, this.setPaused] = createSignal(true);
@@ -232,7 +236,6 @@ export class Simulator {
       this.renderer.setSize(width, height);
       this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
-      // this.renderer.render(this.scene, this.camera);
     }
   }
 

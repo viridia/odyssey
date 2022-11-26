@@ -1,4 +1,5 @@
 import { Button, Page, Spacer, Menu } from 'dolmen';
+import { KeysManager, KeysManagerContext } from 'dolmen-keys';
 import { createEffect, createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import { createCameraController } from './createCameraController';
@@ -10,12 +11,16 @@ import { MainMenu } from './icons';
 import github from './images/github.png';
 import { TimeDisplay } from './ui/TimeDisplay';
 import { TimeControl } from './ui/TimeControl';
+import { createUserSettings, UserSettingsContext } from './lib/createUserSettings';
+import { HelpDialog } from './ui/HelpDialog';
 
-const simulator = new Simulator();
+const [settings, setSettings] = createUserSettings();
+const simulator = new Simulator(settings);
 
 function Main() {
   const [viewport, setViewport] = createSignal<HTMLElement>();
   const controllerAttrs = createCameraController(simulator);
+  const keyMgr = new KeysManager();
 
   createEffect(() => {
     const elt = viewport();
@@ -25,30 +30,50 @@ function Main() {
   });
 
   return (
-    <Page class="dm-theme-space">
-      <Page.Header class="page-header" gap="md">
-        <Page.Title>Odyssey</Page.Title>
-        <Spacer />
-        <TimeDisplay />
-        <TimeControl />
-        <Spacer />
-        <Menu>
-          <Menu.Button icon color="subtle">
-            <MainMenu />
-          </Menu.Button>
-          <Menu.List placement="bottom-end" inset>
-            <Menu.Item checked>Display Trajectories</Menu.Item>
-            <Menu.Item>Display Axes</Menu.Item>
-          </Menu.List>
-        </Menu>
-        <Button icon color="subtle">
-          <img src={github} width={20} />
-        </Button>
-      </Page.Header>
-      <Page.Content class="page-content">
-        <div {...controllerAttrs} class="viewport" ref={setViewport} />
-      </Page.Content>
-    </Page>
+    <UserSettingsContext.Provider value={[settings, setSettings]}>
+      <KeysManagerContext.Provider value={keyMgr}>
+        <Page class="dm-theme-space">
+          <Page.Header class="page-header" gap="md">
+            <Page.Title>Odyssey</Page.Title>
+            <Spacer />
+            <TimeDisplay />
+            <TimeControl />
+            <Spacer />
+            <Menu>
+              <Menu.Button icon color="subtle">
+                <MainMenu />
+              </Menu.Button>
+              <Menu.List placement="bottom-end" inset>
+                <Menu.Item
+                  checked={settings.showTrajectories}
+                  onClick={() => {
+                    setSettings('showTrajectories', show => !show);
+                  }}
+                >
+                  Display Trajectories
+                </Menu.Item>
+                <Menu.Item disabled>Display Axes</Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  onClick={() => {
+                    setSettings('showHelp', true);
+                  }}
+                >
+                  Help
+                </Menu.Item>
+              </Menu.List>
+            </Menu>
+            <Button.Link icon color="subtle" target="new" href="https://github.com/viridia/odyssey">
+              <img src={github} width={18} />
+            </Button.Link>
+          </Page.Header>
+          <Page.Content class="page-content">
+            <div {...controllerAttrs} class="viewport" ref={setViewport} />
+          </Page.Content>
+          <HelpDialog />
+        </Page>
+      </KeysManagerContext.Provider>
+    </UserSettingsContext.Provider>
   );
 }
 

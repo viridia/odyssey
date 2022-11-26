@@ -18,7 +18,7 @@ export const TimeDisplay = () => {
 
   return (
     <Group gap="md">
-      <div class={styles.timeDisplay}>{time().toLocaleDateString(undefined, {
+      <div class={styles.dateDisplay}>{time().toLocaleDateString(undefined, {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'

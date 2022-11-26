@@ -60,6 +60,11 @@ export class FlightPathOverlay {
     }
     this.orbit.updateGeometry(position);
   }
+
+  public animate() {
+    const sim = getSimulator();
+    this.orbit.setVisible(!!sim.settings.showTrajectories);
+  }
 }
 
 const v = new Vector3();

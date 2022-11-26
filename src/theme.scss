@@ -99,6 +99,9 @@ $textHighlight: #6f6fcf66;
   --dm-color-tooltip-bg: black;
   --dm-color-tooltip-text: #{$coolgray300};
 
-  --dm-font-body: 'Exo 2', sans-serif;
-  --dm-font-title: 'Exo 2', sans-serif;
+  --dm-font-body: 'Saira', sans-serif;
+  --dm-font-title: 'Saira', sans-serif;
+  // Remove once we fix dolmen.
+  --dm-fonts-body: 'Saira', sans-serif;
+  --dm-fonts-title: 'Saira', sans-serif;
 }
