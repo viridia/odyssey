@@ -28,4 +28,8 @@ export class CelestialBody {
   public getWorldPosition(out: Vector3) {
     this.group.getWorldPosition(out);
   }
+
+  public pick() {
+
+  }
 }

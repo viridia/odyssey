@@ -140,14 +140,6 @@ export class Planet extends CelestialBody {
     return this;
   }
 
-  public setAxis(): this {
-    return this;
-  }
-
-  public setRotationSpeed(): this {
-    return this;
-  }
-
   public simulate(delta: number) {
     // const sim = getSimulator();
     if (this.dayLength > 0) {

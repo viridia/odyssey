@@ -1,6 +1,7 @@
 # TODO
 
 * Text annotations
+  * Fading out
 * Planet orbit paths.
   * Elliptical
   * Transfer

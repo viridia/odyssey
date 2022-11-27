@@ -11,7 +11,7 @@ import {
 import { OrbitalElements } from '../../math/OrbitalElements';
 import { FlightPathOverlay } from '../overlays/FlightPathOverlay';
 import { createLabel, TextLabel } from '../overlays/Label';
-import { TranslucentDiscMarker } from '../overlays/TranslucentDiscMarker';
+import { MarkerDisc } from '../overlays/MarkerDisc';
 import { CelestialBody } from '../planets/CelestialBody';
 import { getSimulator } from '../Simulator';
 
@@ -37,7 +37,7 @@ export class Vehicle {
 
   private material: MeshStandardMaterial;
 
-  private marker: TranslucentDiscMarker;
+  private marker: MarkerDisc;
   private label: TextLabel;
 
   constructor(public readonly name: string, parent: Object3D) {
@@ -53,14 +53,17 @@ export class Vehicle {
     this.group.add(mesh);
 
     // Small LOD sphere to display when planet gets very small.
-    this.marker = new TranslucentDiscMarker(this.group, {
+    this.marker = new MarkerDisc(this.group, {
       radius: 0.0035,
       color: MARKER_COLOR,
-      nominalDistance: 1e6,
-      minDistance: 1e5,
+      nominalDistance: 1e5,
+      minDistance: 1e3,
     });
 
-    this.label = createLabel(name);
+    this.label = createLabel(name, {
+      nominalDistance: 1e5,
+      minDistance: 1e4,
+    });
     this.group.add(this.label);
   }
 
@@ -124,7 +127,6 @@ export class Vehicle {
     const selected = this === sim.selection.picked || this === sim.selection.selected;
     this.group.position.copy(this.position);
     const distToCamera = sim.camera.position.distanceTo(this.position);
-    this.label.quaternion.copy(sim.camera.quaternion);
     this.label.scale.setScalar(distToCamera / 2e7);
     this.label.visible = selected;
     this.marker.setColor(selected ? MARKER_SELECTED_COLOR : MARKER_COLOR);
