@@ -21,22 +21,27 @@ import { EventBus } from '../lib/EventBus';
 import { Stars } from './stars/Stars';
 // import { getRapier } from './physics/rapier';
 import { Orrery } from './planets/Orrery';
-import { Planet } from './planets/Planet';
 import { Vehicle } from './vehicles/Vehicle';
 import { Accessor, createSignal, Setter } from 'solid-js';
 import { ISettings } from '../lib/createUserSettings';
 import { Compass } from './overlays/Compass';
 import { CelestialBody } from './planets/CelestialBody';
+import { createStore, SetStoreFunction, Store } from 'solid-js/store';
 
 // const cameraOffset = new Vector3();
 
 export const MIN_CAMERA_DISTANCE = 100;
 export const MAX_CAMERA_DISTANCE = 5_000_000_000_000; // A little larger than pluto's orbit
 
+interface ISelectionStore {
+  picked: Vehicle | CelestialBody | null;
+  selected: Vehicle | CelestialBody | null;
+  prevSelected: Vehicle | CelestialBody | null;
+}
+
 /** Contains the three.js renderer and handles to important resources. */
 export class Simulator {
   // Camera variables
-  public viewTarget: Planet | null = null;
   public readonly viewCenter = new Vector3();
   public readonly camera: PerspectiveCamera;
   public cameraElevationAngle = Math.PI * 0.05;
@@ -60,10 +65,7 @@ export class Simulator {
   public readonly setSpeed: Setter<number>;
   public readonly timeScale = [1, 10, 1e2, 2.5e2, 1e3, 2.5e3, 1e4, 2.5e4, 1e5, 2.5e5, 1e6];
 
-  public readonly pickedObject: Accessor<Vehicle | CelestialBody | null>;
-  public readonly setPickedObject: Setter<Vehicle | CelestialBody | null>;
-  public readonly selectedObject: Accessor<Vehicle | CelestialBody | null>;
-  public readonly setSelectedObject: Setter<Vehicle | CelestialBody | null>;
+  public readonly selection: Store<ISelectionStore>;
 
   private mount: HTMLElement | undefined;
   private frameId: number | null = null;
@@ -73,6 +75,8 @@ export class Simulator {
   private vehicles: Vehicle[] = [];
 
   private resize: ResizeObserver;
+  private setSelection: SetStoreFunction<ISelectionStore>;
+  private cameraEase = 0;
 
   // private sphereBody?: RigidBody;
 
@@ -92,8 +96,11 @@ export class Simulator {
 
     [this.speed, this.setSpeed] = createSignal(0);
     [this.paused, this.setPaused] = createSignal(true);
-    [this.pickedObject, this.setPickedObject] = createSignal(null);
-    [this.selectedObject, this.setSelectedObject] = createSignal(null);
+    [this.selection, this.setSelection] = createStore<ISelectionStore>({
+      picked: null,
+      selected: null,
+      prevSelected: null,
+    });
 
     this.scene.add(this.eclipticGroup);
 
@@ -101,7 +108,7 @@ export class Simulator {
     this.planets = new Orrery();
     this.planets.simulate(0);
     this.planets.addToScene(this.eclipticGroup);
-    this.viewTarget = this.planets.earth;
+    this.setSelection('selected', this.planets.earth);
 
     this.compass = new Compass(this.scene);
 
@@ -202,8 +209,19 @@ export class Simulator {
   }
 
   public updateCamera() {
-    if (this.viewTarget) {
-      this.viewTarget.getWorldPosition(this.viewCenter);
+    const viewTarget = this.selection.selected;
+    if (viewTarget) {
+      if (
+        this.selection.prevSelected &&
+        this.selection.prevSelected !== viewTarget &&
+        this.cameraEase > 0
+      ) {
+        this.selection.prevSelected.getWorldPosition(viewCenter1);
+        viewTarget.getWorldPosition(viewCenter2);
+        this.viewCenter.lerpVectors(viewCenter2, viewCenter1, easeInOutQuad(this.cameraEase));
+      } else {
+        viewTarget.getWorldPosition(this.viewCenter);
+      }
     }
     this.camera.up.set(0, 0, 1);
     this.camera.rotation.order = 'ZYX';
@@ -223,6 +241,7 @@ export class Simulator {
 
   private animate() {
     const deltaTime = Math.min(this.clock.getDelta(), 0.1);
+    this.cameraEase = Math.max(0, this.cameraEase - deltaTime * 2);
     if (!this.paused()) {
       const elapsed = deltaTime * this.simSpeed;
       this.simTime += elapsed;
@@ -231,9 +250,10 @@ export class Simulator {
       this.vehicles.forEach(v => v.simulate(elapsed));
     }
     this.updateCamera();
-    this.events.emit('animate', deltaTime);
     this.planets.animate(deltaTime);
     this.vehicles.forEach(v => v.animate());
+    this.updateCamera();
+    this.events.emit('animate', deltaTime);
     this.stars.update();
     this.render();
     this.frameId = window.requestAnimationFrame(this.animate);
@@ -276,6 +296,14 @@ export class Simulator {
     return light;
   }
 
+  public setSelectedObject(selected: Vehicle | CelestialBody | null) {
+    this.setSelection({
+      selected,
+      prevSelected: this.selection.selected,
+    });
+    this.cameraEase = 1;
+  }
+
   public pick(ray: Ray): void {
     this.camera.getWorldDirection(cameraDirection);
     let closestAngle = 0;
@@ -294,13 +322,15 @@ export class Simulator {
       }
     }
 
-    this.setPickedObject(closestVehicle);
+    this.setSelection('picked', closestVehicle);
     // console.log(closestVehicle?.name);
   }
 }
 
 const cameraDirection = new Vector3();
 const pickPosition = new Vector3();
+const viewCenter1 = new Vector3();
+const viewCenter2 = new Vector3();
 
 let simulator: Simulator;
 
@@ -310,4 +340,8 @@ export function getSimulator(): Simulator {
 
 if (import.meta.hot) {
   import.meta.hot.decline();
+}
+
+function easeInOutQuad(x: number): number {
+  return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
 }

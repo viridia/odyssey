@@ -48,7 +48,7 @@ export class Vehicle {
       emissive: new Color(0, 0, 0.5).convertSRGBToLinear(),
       depthTest: false,
     });
-    const sphere = new SphereGeometry(3e4, 64, 32);
+    const sphere = new SphereGeometry(200, 64, 32);
     const mesh = new Mesh(sphere, this.material);
     this.group.add(mesh);
 
@@ -76,6 +76,11 @@ export class Vehicle {
     if (this.primary !== primary) {
       this.primary = primary;
     }
+  }
+
+  /** Copy world position to output vector. */
+  public getWorldPosition(out: Vector3) {
+    this.group.getWorldPosition(out);
   }
 
   public calcOrbit() {
@@ -116,7 +121,7 @@ export class Vehicle {
 
   public animate() {
     const sim = getSimulator();
-    const selected = this === sim.pickedObject() || this === sim.selectedObject();
+    const selected = this === sim.selection.picked || this === sim.selection.selected;
     this.group.position.copy(this.position);
     const distToCamera = sim.camera.position.distanceTo(this.position);
     this.label.quaternion.copy(sim.camera.quaternion);

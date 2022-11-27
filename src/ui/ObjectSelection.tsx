@@ -6,7 +6,7 @@ import styles from './ObjectSelection.module.scss';
 export const ObjectSelection: VoidComponent = () => {
   const sim = getSimulator();
   return (
-    <Show when={sim.selectedObject()} keyed>
+    <Show when={sim.selection.selected} keyed>
       {obj => (
         <Card class={styles.card}>
           <Card.Content>{obj.name}</Card.Content>

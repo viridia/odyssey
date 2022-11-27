@@ -93,7 +93,7 @@ export const NavigationControls: VoidComponent<{ viewport?: HTMLElement }> = pro
         viewport.releasePointerCapture(e.pointerId);
         dragging = false;
         if (!didDrag) {
-          sim.setSelectedObject(sim.pickedObject());
+          sim.setSelectedObject(sim.selection.picked);
         }
       };
 

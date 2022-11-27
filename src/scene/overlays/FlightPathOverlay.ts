@@ -50,7 +50,7 @@ export class FlightPathOverlay {
       }
     } else {
       // Elliptical
-      const steps = 128;
+      const steps = 1024;
       for (let phi = 0; phi <= steps; phi++) {
         const angle = (phi * Math.PI * 2) / steps;
         const ta = elements.trueAnomalyFromEccentric(angle);
