@@ -15,6 +15,9 @@ import { TranslucentDiscMarker } from '../overlays/TranslucentDiscMarker';
 import { CelestialBody } from '../planets/CelestialBody';
 import { getSimulator } from '../Simulator';
 
+const MARKER_COLOR = new Color(0, 0.6, 0).convertSRGBToLinear();
+const MARKER_SELECTED_COLOR = new Color(0.3, 0.8, 0.3).convertSRGBToLinear();
+
 export class Vehicle {
   // Position and velocity in ecliptic coords.
   public readonly position = new Vector3();
@@ -52,7 +55,7 @@ export class Vehicle {
     // Small LOD sphere to display when planet gets very small.
     this.marker = new TranslucentDiscMarker(this.group, {
       radius: 0.0035,
-      color: new Color(0, 0.6, 0).convertSRGBToLinear(),
+      color: MARKER_COLOR,
       nominalDistance: 1e6,
       minDistance: 1e5,
     });
@@ -113,10 +116,13 @@ export class Vehicle {
 
   public animate() {
     const sim = getSimulator();
+    const selected = this === sim.pickedObject() || this === sim.selectedObject();
     this.group.position.copy(this.position);
     const distToCamera = sim.camera.position.distanceTo(this.position);
     this.label.quaternion.copy(sim.camera.quaternion);
     this.label.scale.setScalar(distToCamera / 2e7);
+    this.label.visible = selected;
+    this.marker.setColor(selected ? MARKER_SELECTED_COLOR : MARKER_COLOR);
     this.path.animate();
   }
 }

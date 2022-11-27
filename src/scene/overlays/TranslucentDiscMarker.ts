@@ -1,4 +1,13 @@
-import { BufferGeometry, Color, Float32BufferAttribute, GreaterEqualDepth, LessDepth, Mesh, Object3D, Vector3 } from 'three';
+import {
+  BufferGeometry,
+  Color,
+  Float32BufferAttribute,
+  GreaterEqualDepth,
+  LessDepth,
+  Mesh,
+  Object3D,
+  Vector3,
+} from 'three';
 import { DiscMaterial } from './DiscMaterial';
 
 interface IOptions {
@@ -69,6 +78,14 @@ export class TranslucentDiscMarker {
   public setPosition(position: Vector3) {
     this.mesh.position.copy(position);
     this.mesh2.position.copy(position);
+  }
+
+  public setColor(color: Color) {
+    if (!color.equals(this.material.uniforms.diffuse.value)) {
+      this.material.uniforms.diffuse.value = color;
+      this.material2.uniforms.diffuse.value = color;
+      this.material.uniformsNeedUpdate = this.material2.uniformsNeedUpdate = true;
+    }
   }
 
   public dispose() {

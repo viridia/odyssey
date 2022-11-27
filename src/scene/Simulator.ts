@@ -11,6 +11,7 @@ import {
   Color,
   Group,
   PerspectiveCamera,
+  Ray,
   Scene,
   sRGBEncoding,
   Vector3,
@@ -25,6 +26,7 @@ import { Vehicle } from './vehicles/Vehicle';
 import { Accessor, createSignal, Setter } from 'solid-js';
 import { ISettings } from '../lib/createUserSettings';
 import { Compass } from './overlays/Compass';
+import { CelestialBody } from './planets/CelestialBody';
 
 // const cameraOffset = new Vector3();
 
@@ -58,6 +60,11 @@ export class Simulator {
   public readonly setSpeed: Setter<number>;
   public readonly timeScale = [1, 10, 1e2, 2.5e2, 1e3, 2.5e3, 1e4, 2.5e4, 1e5, 2.5e5, 1e6];
 
+  public readonly pickedObject: Accessor<Vehicle | CelestialBody | null>;
+  public readonly setPickedObject: Setter<Vehicle | CelestialBody | null>;
+  public readonly selectedObject: Accessor<Vehicle | CelestialBody | null>;
+  public readonly setSelectedObject: Setter<Vehicle | CelestialBody | null>;
+
   private mount: HTMLElement | undefined;
   private frameId: number | null = null;
   private clock = new Clock();
@@ -85,6 +92,8 @@ export class Simulator {
 
     [this.speed, this.setSpeed] = createSignal(0);
     [this.paused, this.setPaused] = createSignal(true);
+    [this.pickedObject, this.setPickedObject] = createSignal(null);
+    [this.selectedObject, this.setSelectedObject] = createSignal(null);
 
     this.scene.add(this.eclipticGroup);
 
@@ -266,7 +275,32 @@ export class Simulator {
     this.scene.add(light);
     return light;
   }
+
+  public pick(ray: Ray): void {
+    this.camera.getWorldDirection(cameraDirection);
+    let closestAngle = 0;
+    let closestVehicle: Vehicle | null = null;
+    for (const v of this.vehicles) {
+      pickPosition.copy(v.position).sub(this.cameraPosition);
+      const distanceFromCamera = pickPosition.dot(cameraDirection);
+      if (distanceFromCamera < 0) {
+        continue;
+      }
+      pickPosition.normalize();
+      const angle = pickPosition.dot(ray.direction);
+      if (angle > 0.9997 && angle > closestAngle) {
+        closestAngle = angle;
+        closestVehicle = v;
+      }
+    }
+
+    this.setPickedObject(closestVehicle);
+    // console.log(closestVehicle?.name);
+  }
 }
+
+const cameraDirection = new Vector3();
+const pickPosition = new Vector3();
 
 let simulator: Simulator;
 

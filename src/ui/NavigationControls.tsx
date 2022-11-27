@@ -1,6 +1,6 @@
 import { createActiveKeys } from 'dolmen-keys';
 import { createEffect, onCleanup, VoidComponent } from 'solid-js';
-import { MathUtils } from 'three';
+import { MathUtils, Raycaster, Vector2 } from 'three';
 import { getSimulator, MAX_CAMERA_DISTANCE, MIN_CAMERA_DISTANCE } from '../scene/Simulator';
 
 export const NavigationControls: VoidComponent<{ viewport?: HTMLElement }> = props => {
@@ -12,7 +12,24 @@ export const NavigationControls: VoidComponent<{ viewport?: HTMLElement }> = pro
     zoomOut: ',',
     zoomIn: '.',
   });
-  let dragging = false;
+  let dragging = false; // If we're currently dragging
+  let didDrag = false; // If mouse moved while dragging
+  let xDragOrigin = 0; // Start of drag coords
+  let yDragOrigin = 0;
+  const screenPt = new Vector2();
+  const raycaster = new Raycaster();
+
+  const pick = (x: number, y: number) => {
+    // Raycast
+    const viewport = props.viewport;
+    if (viewport) {
+      const sim = getSimulator();
+      const rect = viewport.getBoundingClientRect();
+      screenPt.set(((x - rect.left) / rect.width) * 2 - 1, 1 - ((y - rect.top) / rect.height) * 2);
+      raycaster.setFromCamera(screenPt, sim.camera);
+      sim.pick(raycaster.ray);
+    }
+  };
 
   createEffect(() => {
     const sim = getSimulator();
@@ -61,20 +78,31 @@ export const NavigationControls: VoidComponent<{ viewport?: HTMLElement }> = pro
             Math.PI * 2
           );
         }
+        pick(e.clientX, e.clientY);
       };
 
       const onPointerDown = (e: PointerEvent) => {
         viewport.setPointerCapture(e.pointerId);
         dragging = true;
+        xDragOrigin = e.clientX;
+        yDragOrigin = e.clientY;
+        didDrag = false;
       };
 
       const onPointerUp = (e: PointerEvent) => {
         viewport.releasePointerCapture(e.pointerId);
         dragging = false;
+        if (!didDrag) {
+          sim.setSelectedObject(sim.pickedObject());
+        }
       };
 
       const onPointerMove = (e: PointerEvent) => {
         if (dragging) {
+          const dragDistance = (e.clientX - xDragOrigin) ** 2 + (e.clientY - yDragOrigin) ** 2;
+          if (dragDistance > 4) {
+            didDrag = true;
+          }
           if (Math.abs(e.movementX) > Math.abs(e.movementY)) {
             sim.cameraAzimuthAngle = MathUtils.euclideanModulo(
               sim.cameraAzimuthAngle + e.movementX * -0.001,
@@ -87,6 +115,8 @@ export const NavigationControls: VoidComponent<{ viewport?: HTMLElement }> = pro
               Math.PI * 0.5 - 0.0000001
             );
           }
+        } else {
+          pick(e.clientX, e.clientY);
         }
       };
 

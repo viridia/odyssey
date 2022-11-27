@@ -13,6 +13,7 @@ import { TimeControl } from './ui/TimeControl';
 import { createUserSettings, UserSettingsContext } from './lib/createUserSettings';
 import { HelpDialog } from './ui/HelpDialog';
 import { NavigationControls } from './ui/NavigationControls';
+import { ObjectSelection } from './ui/ObjectSelection';
 
 function Main() {
   const [settings, setSettings] = createUserSettings();
@@ -75,6 +76,7 @@ function Main() {
           </Page.Header>
           <Page.Content class="page-content">
             <div class="viewport" ref={setViewport} />
+            <ObjectSelection />
           </Page.Content>
           <HelpDialog />
         </Page>
