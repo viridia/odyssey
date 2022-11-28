@@ -14,6 +14,8 @@ import {
   TextureLoader,
   Vector3,
 } from 'three';
+import { createLabel, TextLabel } from '../overlays/Label';
+import { SelectionRing } from '../overlays/SelectionRing';
 import { getSimulator } from '../Simulator';
 import { AtmosphereHaloMaterial } from './AtmosphereHaloMaterial';
 import { CelestialBody } from './CelestialBody';
@@ -26,10 +28,12 @@ interface IPlanetOptions {
   mass?: number;
   oblateness?: number;
   texture?: string;
+  roughness?: number;
   roughnessTexture?: string;
   atmosphereThickness?: number;
   atmosphereColor?: Color;
   atmosphereOpacity?: number;
+  atmosphereDensity?: (height: number) => number;
   luminosity?: number;
   luminousColor?: Color;
   luminousDistance?: number;
@@ -46,28 +50,32 @@ export class Planet extends CelestialBody {
   public geometry: BufferGeometry;
   public material: MeshStandardMaterial;
   private atmoMesh?: Mesh<BufferGeometry, Material>;
+  private atmoGeometry?: BufferGeometry;
   private atmoMaterial?: AtmosphereHaloMaterial;
   private sunlightDir = new Vector3();
   private lpMaterial: MeshBasicMaterial;
   private lpMesh: Mesh<BufferGeometry, MeshBasicMaterial>;
-  private oblateness = 0;
+  // private oblateness = 0;
 
   private dayLength = 0;
   private dayRotation = 0;
+  private label: TextLabel;
+  private selection: SelectionRing;
   // private yearLength;
 
   // Need:
   // axis direction
 
-  constructor(name: string, radius: number, options: IPlanetOptions = {}) {
+  constructor(name: string, radius: number, private options: IPlanetOptions = {}) {
     super(name, radius, options.mass ?? 1);
-    this.material = new MeshStandardMaterial();
+    this.material = new MeshStandardMaterial({
+      roughness: options.roughness ?? 1,
+    });
     if (options.texture) {
       const tx = loader.load(options.texture);
       tx.encoding = sRGBEncoding;
       this.material.map = tx;
     }
-    this.oblateness = options.oblateness ?? 0;
     this.geometry = new SphereGeometry(radius, WIDTH_SEGMENTS, HEIGHT_SEGMENTS);
     this.mesh = new Mesh(this.geometry, this.material);
     this.mesh.matrixAutoUpdate = false;
@@ -78,7 +86,7 @@ export class Planet extends CelestialBody {
     this.group.add(this.mesh);
 
     // Small LOD sphere to display when planet gets very small.
-    const lpSphere = new SphereGeometry(radius, 16, 8);
+    this.atmoGeometry = new SphereGeometry(radius, 16, 8);
     this.lpMaterial = new MeshBasicMaterial({
       color: options.luminousColor ?? new Color(1, 1, 1),
       depthWrite: false,
@@ -86,7 +94,7 @@ export class Planet extends CelestialBody {
       transparent: true,
       blending: AdditiveBlending,
     });
-    this.lpMesh = new Mesh(lpSphere, this.lpMaterial);
+    this.lpMesh = new Mesh(this.atmoGeometry, this.lpMaterial);
     this.lpMesh.visible = false;
     this.lpMesh.material.opacity = 1;
     this.group.add(this.lpMesh);
@@ -128,6 +136,30 @@ export class Planet extends CelestialBody {
     //   position.push(...v.toArray());
     // }
     // orbit.updateGeometry(position);
+
+    this.label = createLabel(name, {
+      nominalDistance: 1e5,
+      minDistance: 1e4,
+    });
+    this.label.color = new Color(0x3344ff);
+    this.label.anchorY = 'bottom';
+    this.label.anchorX = 'center';
+    this.label.position.z = radius * 1.2;
+    this.group.add(this.label);
+
+    this.selection = new SelectionRing(this.group, radius);
+  }
+
+  public dispose() {
+    this.mesh.removeFromParent();
+    this.geometry.dispose();
+    this.material.dispose();
+    this.atmoMesh?.removeFromParent();
+    this.atmoMaterial?.dispose();
+    this.atmoGeometry?.dispose();
+    this.label.removeFromParent();
+    this.label.dispose();
+    this.selection.dispose();
   }
 
   public setPrimary(primary: CelestialBody | null = null): this {
@@ -138,6 +170,11 @@ export class Planet extends CelestialBody {
       this.group.removeFromParent();
     }
     return this;
+  }
+
+  public getAtmosphereDensity(altitude: number) {
+    const { atmosphereDensity } = this.options;
+    return atmosphereDensity ? atmosphereDensity(altitude) : 0;
   }
 
   public simulate(delta: number) {
@@ -154,7 +191,7 @@ export class Planet extends CelestialBody {
     this.mesh.matrixAutoUpdate = false;
     this.mesh.matrix
       .identity()
-      .multiply(mTemp.makeScale(1, 1, 1 + this.oblateness))
+      .multiply(mTemp.makeScale(1, 1, 1 + (this.options.oblateness ?? 0)))
       .multiply(mTemp.makeRotationX(Math.PI * 0.5))
       .multiply(mTemp.makeRotationX((23.5 * Math.PI) / 180))
       .multiply(mTemp.makeRotationY(this.dayRotation * Math.PI * 2));
@@ -186,6 +223,11 @@ export class Planet extends CelestialBody {
     this.lpMesh.scale.setScalar(dist / lodDistance);
 
     this.satellites.forEach(sat => sat.animate(delta));
+
+    const distToCamera = sim.camera.position.distanceTo(this.position);
+    this.label.scale.setScalar(distToCamera / 2e7);
+    this.label.visible = this === sim.selection.picked;
+    this.selection.setVisible(this === sim.selection.picked && this !== sim.selection.selected);
   }
 }
 

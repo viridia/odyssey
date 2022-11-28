@@ -34,7 +34,6 @@ export class CoronalHaze {
     this.mesh.castShadow = false;
     this.mesh.position.set(0, 0, 0);
     this.mesh.matrixAutoUpdate = true;
-    // this.mesh.visible = true;
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = -1;
 

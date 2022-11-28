@@ -1,13 +1,12 @@
 # TODO
 
-* Text annotations
-  * Fading out
 * Planet orbit paths.
   * Elliptical
   * Transfer
 * Display orbit semi-major axis
 * Planetary Day Length / Offset
 * Jupiter and other planets.
+  * Need orbits.
 * Earth orbital eccentricity.
 * Milky Way
 * Axial Tilt (for planets other than earth)
@@ -24,6 +23,7 @@
 * Earth bump map.
 * Launch complices.
 * Collisions
+* Saturn ring shadow.
 
 # Notes
 

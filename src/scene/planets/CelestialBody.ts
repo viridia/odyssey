@@ -1,14 +1,9 @@
 import { Group, Vector3 } from 'three';
 
-export interface ISatellite {
-  simulate(deltaTime: number): void;
-  animate(deltaTime: number): void;
-}
-
-export class CelestialBody {
+export abstract class CelestialBody {
   // This group's matrix holds the transform for the body, not it's rotation.
   public readonly group = new Group();
-  public readonly satellites: ISatellite[] = [];
+  public readonly satellites: CelestialBody[] = [];
 
   protected readonly worldPosition = new Vector3();
 
@@ -29,7 +24,10 @@ export class CelestialBody {
     this.group.getWorldPosition(out);
   }
 
-  public pick() {
-
+  public getAtmosphereDensity(_altitude: number) {
+    return 0;
   }
+
+  public abstract simulate(delta: number): void;
+  public abstract animate(delta: number): void;
 }

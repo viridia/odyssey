@@ -51,7 +51,6 @@ export class Sun extends CelestialBody {
 
     this.mesh = new Mesh(this.geometry, this.material);
     this.mesh.castShadow = true;
-    // this.mesh.visible = false;
     this.group.add(this.mesh);
 
     if (options.atmosphereThickness) {

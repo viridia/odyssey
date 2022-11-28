@@ -11,6 +11,8 @@ import { eccentricAnomalyFromMeanElliptic, eccentricAnomalyFromMeanHyperbolic } 
     * https://space.stackexchange.com/questions/20085/calculate-true-anomaly-at-future-point-in-time-with-hyperbolic-orbits
     * https://space.stackexchange.com/questions/54414/how-to-calculate-the-velocity-vector-in-the-case-of-a-hyperbolic-orbit
     * https://space.stackexchange.com/questions/24646/finding-x-y-z-vx-vy-vz-from-hyperbolic-orbital-elements
+    * https://github.com/RazerM/orbital
+    * https://www.bogan.ca/orbits/kepler/orbteqtn.html
  */
 
 const SMALL_NUMBER = 1e-15;
@@ -37,9 +39,18 @@ export class OrbitalElements {
 
   // Matrix used to transform from perifocal to inertial coordinates (relative to primary).
   private matrix = new Matrix4();
+  private matrixRotate = new Matrix4();
   private matrixNeedsUpdate = true;
 
-  public fromStateVector(pos: Vector3, vel: Vector3, m1: number, m2: number = 0) {
+  constructor(private m1: number, private m2 = 0) {}
+
+  public setMasses(m1: number, m2: number = 0) {
+    this.m1 = m1;
+    this.m2 = m2;
+  }
+
+  public fromStateVector(pos: Vector3, vel: Vector3) {
+    const { m1, m2 } = this;
     const mu = G * (m1 + m2);
 
     // let h = vector.cross(pos, vel);
@@ -74,7 +85,7 @@ export class OrbitalElements {
       raan = Math.PI * 2 - raan;
     }
 
-    let argPe = angleBetween(n, ev);
+    let argPe = -angleBetween(n, ev);
     if (ev.z < 0) {
       argPe = Math.PI * 2 - argPe;
     }
@@ -113,15 +124,28 @@ export class OrbitalElements {
     this.matrixNeedsUpdate = true;
   }
 
+  public distanceToPrimary(ta?: number) {
+    const { e, a } = this;
+    const E = this.eccentricAnomalyFromTrue(ta ?? this.v);
+    if (e < 1) {
+      return a * (1 - e * Math.cos(E));
+      // } else if (e === 1) {
+      //   return a + f**2 / 2;
+    } else {
+      return a * (1 - e * Math.cosh(E));
+    }
+  }
+
   /** Compute the orbital position at a given true anomaly.
    * @param ta The true anomaly
-   * @param out Position in perifocal coordinates.
+   * @param outPosition Position in perifocal coordinates.
+   * @param outVelocity Velocity in perifocal coordinates.
    * @returns True if the position is valid (which can be false for hyperbolic orbits
    *    when the true anomaly is out of range)
    */
-  public toPerifocal(out: Vector3, ta?: number): boolean {
-    const { e, a, v } = this;
-    const f = ta ?? v;
+  public toPerifocal(outPosition: Vector3, outVelocity?: Vector3, ta?: number): boolean {
+    const { e, a, v, m1, m2 } = this;
+    const f = ta ?? v; // True anomaly
     const p = a * (1 - e ** 2);
     const m = p / (1 + e * Math.cos(f));
     if (m <= 0) {
@@ -129,23 +153,79 @@ export class OrbitalElements {
     }
     const x = Math.cos(f) * m;
     const y = Math.sin(f) * m;
-    out.set(x, y, 0);
+    outPosition.set(x, y, 0);
+    if (outVelocity) {
+      const mu = G * (m1 + m2);
+
+      const E = this.eccentricAnomalyFromTrue(f);
+      const dist = this.distanceToPrimary(ta);
+      if (e > 1) {
+        const rho = Math.sqrt(-mu * a) / dist;
+        outVelocity.x = -rho * Math.sinh(E);
+        outVelocity.y = rho * Math.sqrt(e ** 2 - 1) * Math.cosh(E);
+        outVelocity.z = 0;
+      } else {
+        const rho = Math.sqrt(mu * a) / dist;
+        outVelocity.x = rho * -Math.sin(E);
+        outVelocity.y = rho * Math.sqrt(1 - e ** 2) * Math.cos(E);
+        outVelocity.z = 0;
+      }
+    }
     return true;
   }
 
   /** Compute the orbital position, in rectilinear coordinates, at true anomaly ta. */
-  public toInertial(out: Vector3, ta?: number): boolean {
-    if (!this.toPerifocal(out, ta ?? this.v)) {
+  public toInertial(outPosition: Vector3, outVelocity?: Vector3, ta?: number): boolean {
+    const f = ta ?? this.v;
+    if (!this.toPerifocal(outPosition, outVelocity, f)) {
       return false;
     }
     if (this.matrixNeedsUpdate) {
       this.updateMatrix();
     }
-    out.applyMatrix4(this.matrix);
+    outPosition.applyMatrix4(this.matrix);
+    if (outVelocity) {
+      outVelocity.applyMatrix4(this.matrixRotate);
+    }
+    // outVelocity?.applyMatrix4(this.matrix);
     return true;
   }
 
-  public meanMotion(m1: number, m2: number = 0) {
+  /**
+   * Fill in the vectors representing the direction of travel and orientation.
+   * @param uOut Radial unit vector
+   * @param vOut Transversal (in-flight) direction unit vector
+   * @param wOut Out-of-plane direction unit vector
+   */
+  // public getDirectionVectors(uOut: Vector3, vOut: Vector3, wOut: Vector3, f?: number) {
+  //   const { ap, i, raan, v } = this;
+  //   // def uvw_from_elements(i, raan, arg_pe, f):
+  //   const u = ap + (f ?? v);
+
+  //   const sinU = Math.sin(u);
+  //   const cosU = Math.cos(u);
+  //   const sinRaan = Math.sin(raan);
+  //   const cosRaan = Math.cos(raan);
+  //   const sinI = Math.sin(i);
+  //   const cosI = Math.cos(i);
+
+  //   uOut.set(
+  //     cosU * cosRaan - sinU * sinRaan * cosI,
+  //     cosU * sinRaan + sinU * cosRaan * cosI,
+  //     sinU * sinI
+  //   );
+
+  //   vOut.set(
+  //     -sinU * cosRaan - cosU * sinRaan * cosI,
+  //     -sinU * sinRaan + cosU * cosRaan * cosI,
+  //     cosU * sinI
+  //   );
+
+  //   wOut.set(sinRaan * sinI, -cosRaan * sinI, cosI);
+  // }
+
+  public meanMotion() {
+    const { m1, m2 } = this;
     const mu = G * (m1 + m2);
     return Math.sqrt(mu / Math.abs(this.a ** 3));
   }
@@ -207,9 +287,11 @@ export class OrbitalElements {
     this.matrix.makeRotationZ(this.ap);
     this.matrix.premultiply(mTemp.makeRotationX(this.i));
     this.matrix.premultiply(mTemp.makeRotationZ(this.raan));
+    this.matrixRotate.extractRotation(this.matrix);
     this.matrixNeedsUpdate = false;
   }
 }
+
 const mTemp = new Matrix4();
 
 function angleBetween(a: Vector3, b: Vector3): number {

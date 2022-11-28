@@ -9,16 +9,16 @@ const range = (from: number, to: number, step: number = 1) =>
   [...Array(Math.floor((to - from) / step) + 1)].map((_, i) => from + i * step);
 
 describe('OrbitalElements', () => {
-  const elements = new OrbitalElements();
+  const elements = new OrbitalElements(MassEarth);
 
   describe('circular', () => {
-    const elements = new OrbitalElements();
+    const elements = new OrbitalElements(MassEarth);
     elements.e = 0;
     elements.a = 1e5;
 
     test('fromStateVector', () => {
       // A nearly circular orbit
-      elements.fromStateVector(new Vector3(6.378e6 * 2, 0, 0), new Vector3(0, 5590, 0), MassEarth);
+      elements.fromStateVector(new Vector3(6.378e6 * 2, 0, 0), new Vector3(0, 5590, 0));
 
       // These tests aren't very good, they are simply validating what's already there.
       expect(elements.e).toBeGreaterThan(0);
@@ -28,17 +28,20 @@ describe('OrbitalElements', () => {
       // expect(elements.raan).toBeCloseTo(0, 4);
       // expect(elements.ap).toBeCloseTo(0, 4);
       expect(elements.v).toBeCloseTo(0, 4);
+      // expect(elements.distanceToPrimary()).toBeCloseTo(6.378e6 * 2);
+      // expect(elements.distanceToPrimary(0.1)).toBeCloseTo(6.378e6 * 2, -1);
+      // expect(elements.distanceToPrimary(0.2)).toBeCloseTo(6.378e6 * 2, -2);
 
       const pos = new Vector3();
 
       // Apoapsis
-      elements.toPerifocal(pos, elements.v);
+      elements.toPerifocal(pos, undefined, elements.v);
       expect(pos.x).toBeCloseTo(6.378e6 * 2);
       expect(pos.y).toBeCloseTo(0);
       expect(pos.z).toBeCloseTo(0);
 
       // Periapsis
-      elements.toPerifocal(pos, elements.v + Math.PI);
+      elements.toPerifocal(pos, undefined, elements.v + Math.PI);
       expect(pos.x).toBeCloseTo(-6.378e6 * 2, -4);
       expect(pos.y).toBeCloseTo(0);
       expect(pos.z).toBeCloseTo(0);
@@ -63,7 +66,7 @@ describe('OrbitalElements', () => {
   });
 
   describe('elliptical', () => {
-    const elements = new OrbitalElements();
+    const elements = new OrbitalElements(MassEarth);
     elements.e = 0.9;
     elements.a = 1e5;
     describe('eccentric <-> true', () => {
@@ -92,20 +95,22 @@ describe('OrbitalElements', () => {
 
   describe('hyperbolic', () => {
     test('fromStateVector', () => {
-      elements.fromStateVector(new Vector3(6.378e6 * 2, 0, 0), new Vector3(0, 8590, 0), MassEarth);
+      elements.fromStateVector(new Vector3(6.378e6 * 2, 0, 0), new Vector3(0, 8590, 0));
       expect(elements.e).toBeGreaterThan(1);
 
       const pos = new Vector3();
 
+      // expect(elements.distanceToPrimary()).toBeCloseTo(6.378e6 * 2);
+
       // At apoapsis, should be the same as initial position
-      elements.toPerifocal(pos, elements.v);
+      elements.toPerifocal(pos, undefined, elements.v);
       expect(pos.x).toBeCloseTo(6.378e6 * 2);
       expect(pos.y).toBeCloseTo(0);
       expect(pos.z).toBeCloseTo(0);
     });
 
     describe('eccentric <-> true', () => {
-      const elements = new OrbitalElements();
+      const elements = new OrbitalElements(MassEarth);
       elements.e = 1.2;
       elements.a = 1e5;
 
@@ -118,7 +123,7 @@ describe('OrbitalElements', () => {
     });
 
     describe('eccentric <-> mean', () => {
-      const elements = new OrbitalElements();
+      const elements = new OrbitalElements(MassEarth);
       elements.e = 1.2;
       elements.a = 1e5;
 

@@ -36,7 +36,6 @@ export const MAX_CAMERA_DISTANCE = 5_000_000_000_000; // A little larger than pl
 interface ISelectionStore {
   picked: Vehicle | CelestialBody | null;
   selected: Vehicle | CelestialBody | null;
-  prevSelected: Vehicle | CelestialBody | null;
 }
 
 /** Contains the three.js renderer and handles to important resources. */
@@ -77,6 +76,7 @@ export class Simulator {
   private resize: ResizeObserver;
   private setSelection: SetStoreFunction<ISelectionStore>;
   private cameraEase = 0;
+  private prevViewCenter = new Vector3();
 
   // private sphereBody?: RigidBody;
 
@@ -99,7 +99,6 @@ export class Simulator {
     [this.selection, this.setSelection] = createStore<ISelectionStore>({
       picked: null,
       selected: null,
-      prevSelected: null,
     });
 
     this.scene.add(this.eclipticGroup);
@@ -117,24 +116,28 @@ export class Simulator {
     vh.position.copy(this.planets.earth.position);
     vh.position.x += this.planets.earth.radius * 2;
     vh.velocity.set(0, 5588, 50); // m/s
-    vh.calcOrbit();
-    this.vehicles.push(vh);
+    this.addVehicle(vh);
 
     const vh2 = new Vehicle('TestVehicle2', this.scene);
     vh2.setPrimary(this.planets.earth);
     vh2.position.copy(this.planets.earth.position);
-    vh2.position.x += this.planets.earth.radius * 2.05;
-    vh2.velocity.set(0, 6588, 50); // m/s
-    vh2.calcOrbit();
-    this.vehicles.push(vh2);
+    vh2.position.y += this.planets.earth.radius * 2.05;
+    vh2.velocity.set(-6588, 0, 50); // m/s
+    this.addVehicle(vh2);
+
+    const vh2a = new Vehicle('TestVehicle2a', this.scene);
+    vh2a.setPrimary(this.planets.earth);
+    vh2a.position.copy(this.planets.earth.position);
+    vh2a.position.x += this.planets.earth.radius * 1.9;
+    vh2a.velocity.set(0, 4818, 50); // m/s
+    this.addVehicle(vh2a);
 
     const vh3 = new Vehicle('TestVehicle3', this.scene);
     vh3.setPrimary(this.planets.earth);
     vh3.position.copy(this.planets.earth.position);
     vh3.position.x += this.planets.earth.radius * 1.95;
     vh3.velocity.set(1200, 1588, 1500); // m/s
-    vh3.calcOrbit();
-    this.vehicles.push(vh3);
+    this.addVehicle(vh3);
 
     const vh4 = new Vehicle('TestVehicle4', this.scene);
     vh4.setPrimary(this.planets.earth);
@@ -142,16 +145,14 @@ export class Simulator {
     vh4.position.x += this.planets.earth.radius * 1.9;
     vh4.position.y += this.planets.earth.radius;
     vh4.velocity.set(0, 0, 1500); // m/s
-    vh4.calcOrbit();
-    this.vehicles.push(vh4);
+    this.addVehicle(vh4);
 
     const vh5 = new Vehicle('TestVehicle5', this.scene);
     vh5.setPrimary(this.planets.earth);
     vh5.position.copy(this.planets.earth.position);
     vh5.position.x += this.planets.earth.radius * 2.1;
     vh5.velocity.set(0, 7988, 50); // m/s
-    vh5.calcOrbit();
-    this.vehicles.push(vh5);
+    this.addVehicle(vh5);
 
     this.updateCamera();
   }
@@ -208,17 +209,30 @@ export class Simulator {
     this.mount?.removeChild(this.renderer.domElement);
   }
 
+  public addVehicle(v: Vehicle) {
+    v.calcOrbit();
+    this.vehicles.push(v);
+  }
+
+  public removeVehicle(v: Vehicle) {
+    let index = this.vehicles.indexOf(v);
+    if (index >= 0) {
+      console.log(`Removed ${v.name}`);
+      this.vehicles.splice(index, 1);
+      v.dispose();
+    }
+  }
+
   public updateCamera() {
     const viewTarget = this.selection.selected;
     if (viewTarget) {
-      if (
-        this.selection.prevSelected &&
-        this.selection.prevSelected !== viewTarget &&
-        this.cameraEase > 0
-      ) {
-        this.selection.prevSelected.getWorldPosition(viewCenter1);
+      if (this.cameraEase > 0) {
         viewTarget.getWorldPosition(viewCenter2);
-        this.viewCenter.lerpVectors(viewCenter2, viewCenter1, easeInOutQuad(this.cameraEase));
+        this.viewCenter.lerpVectors(
+          viewCenter2,
+          this.prevViewCenter,
+          easeInOutQuad(this.cameraEase)
+        );
       } else {
         viewTarget.getWorldPosition(this.viewCenter);
       }
@@ -297,39 +311,75 @@ export class Simulator {
   }
 
   public setSelectedObject(selected: Vehicle | CelestialBody | null) {
-    this.setSelection({
-      selected,
-      prevSelected: this.selection.selected,
-    });
+    this.prevViewCenter.copy(this.viewCenter);
+    this.setSelection({ selected });
     this.cameraEase = 1;
   }
 
   public pick(ray: Ray): void {
     this.camera.getWorldDirection(cameraDirection);
-    let closestAngle = 0;
-    let closestVehicle: Vehicle | null = null;
+    let closestAngle = 0.9997;
+    let closestObject: CelestialBody | Vehicle | null = null;
+
+    // Pick vehicles based on angle
     for (const v of this.vehicles) {
       pickPosition.copy(v.position).sub(this.cameraPosition);
-      const distanceFromCamera = pickPosition.dot(cameraDirection);
-      if (distanceFromCamera < 0) {
+      const distanceFromCameraSq = pickPosition.dot(cameraDirection);
+      if (distanceFromCameraSq < 0) {
         continue;
       }
       pickPosition.normalize();
-      const angle = pickPosition.dot(ray.direction);
-      if (angle > 0.9997 && angle > closestAngle) {
-        closestAngle = angle;
-        closestVehicle = v;
+      const cosAngle = pickPosition.dot(ray.direction);
+      if (cosAngle > closestAngle) {
+        closestAngle = cosAngle;
+        closestObject = v;
       }
     }
 
-    this.setSelection('picked', closestVehicle);
-    // console.log(closestVehicle?.name);
+    // Pick planets based on angle
+    this.planets.forEach(planet => {
+      if (planet === this.planets.sol) {
+        return;
+      }
+      pickPosition.copy(planet.position).sub(this.cameraPosition);
+      const distanceFromCameraSq = pickPosition.dot(cameraDirection);
+      if (distanceFromCameraSq < 0) {
+        return;
+      }
+      pickPosition.normalize();
+      const cosAngle = pickPosition.dot(ray.direction);
+      if (cosAngle > closestAngle) {
+        closestAngle = cosAngle;
+        closestObject = planet;
+      }
+    });
+
+    if (closestObject) {
+      this.setSelection('picked', closestObject);
+    } else {
+      // Pick vehicles based on radius and distance
+      let closestDistance = Infinity;
+      this.planets.forEach(planet => {
+        if (planet === this.planets.sol) {
+          return;
+        }
+        pickPosition.copy(planet.position).sub(this.cameraPosition);
+        const distanceFromCameraSq = pickPosition.dot(cameraDirection);
+        if (distanceFromCameraSq < 0 || distanceFromCameraSq > closestDistance) {
+          return;
+        }
+        if (ray.distanceToPoint(planet.position) < planet.radius) {
+          closestDistance = distanceFromCameraSq;
+          closestObject = planet;
+        }
+      });
+      this.setSelection('picked', closestObject);
+    }
   }
 }
 
 const cameraDirection = new Vector3();
 const pickPosition = new Vector3();
-const viewCenter1 = new Vector3();
 const viewCenter2 = new Vector3();
 
 let simulator: Simulator;
