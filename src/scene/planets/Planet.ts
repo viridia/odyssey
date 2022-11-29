@@ -18,7 +18,7 @@ import { createLabel, TextLabel } from '../overlays/Label';
 import { SelectionRing } from '../overlays/SelectionRing';
 import { getSimulator } from '../Simulator';
 import { AtmosphereHaloMaterial } from './AtmosphereHaloMaterial';
-import { CelestialBody } from './CelestialBody';
+import { CelestialBody, CelestialBodyType } from './CelestialBody';
 
 const WIDTH_SEGMENTS = 96;
 const HEIGHT_SEGMENTS = 48;
@@ -46,6 +46,7 @@ const loader = new TextureLoader();
 // const axis = new Vector3(0, 1, 0);
 
 export class Planet extends CelestialBody {
+  public type: CelestialBodyType;
   public mesh: Mesh<BufferGeometry, MeshStandardMaterial>;
   public geometry: BufferGeometry;
   public material: MeshStandardMaterial;
@@ -55,7 +56,6 @@ export class Planet extends CelestialBody {
   private sunlightDir = new Vector3();
   private lpMaterial: MeshBasicMaterial;
   private lpMesh: Mesh<BufferGeometry, MeshBasicMaterial>;
-  // private oblateness = 0;
 
   private dayLength = 0;
   private dayRotation = 0;
@@ -68,6 +68,7 @@ export class Planet extends CelestialBody {
 
   constructor(name: string, radius: number, private options: IPlanetOptions = {}) {
     super(name, radius, options.mass ?? 1);
+    this.type = 'planet';
     this.material = new MeshStandardMaterial({
       roughness: options.roughness ?? 1,
     });
@@ -164,6 +165,7 @@ export class Planet extends CelestialBody {
 
   public setPrimary(primary: CelestialBody | null = null): this {
     if (primary) {
+      this.type = primary.type === 'star' ? 'planet' : 'moon';
       primary.group.add(this.group);
       primary.satellites.push(this);
     } else {
@@ -226,8 +228,8 @@ export class Planet extends CelestialBody {
 
     const distToCamera = sim.camera.position.distanceTo(this.position);
     this.label.scale.setScalar(distToCamera / 2e7);
-    this.label.visible = this === sim.selection.picked;
-    this.selection.setVisible(this === sim.selection.picked && this !== sim.selection.selected);
+    this.label.visible = this === sim.commandState.picked;
+    this.selection.setVisible(this === sim.commandState.picked && this !== sim.commandState.selected);
   }
 }
 

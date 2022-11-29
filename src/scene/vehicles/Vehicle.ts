@@ -22,7 +22,6 @@ const MARKER_SELECTED_COLOR = new Color(0.3, 0.8, 0.3).convertSRGBToLinear();
 const gravity = new Vector3();
 const r = new Vector3();
 const rDot = new Vector3();
-const drag = new Vector3();
 // const directionTemp = new Vector3();
 
 // const uDirection = new Vector3();
@@ -31,6 +30,7 @@ const drag = new Vector3();
 
 export class Vehicle {
   // Position and velocity in ecliptic coords.
+  public readonly type = 'vehicle';
   public readonly position = new Vector3();
   public readonly velocity = new Vector3();
   public readonly velocityPrev = new Vector3();
@@ -42,7 +42,7 @@ export class Vehicle {
 
   // TODO: Need multiple of these.
   private orbit = new OrbitalElements(0);
-  private orbitChanged = true;
+  // private orbitChanged = true;
 
   // TODO:
   // array of orbital elements with time ranges.
@@ -52,6 +52,11 @@ export class Vehicle {
 
   private marker: MarkerDisc;
   private label: TextLabel;
+
+  private drag = new Vector3();
+  private accel = new Vector3();
+
+  public disposed = false;
 
   // private distArrow = new ArrowHelper();
   // private uArrow = new ArrowHelper();
@@ -101,6 +106,7 @@ export class Vehicle {
 
   public dispose() {
     // TODO: dispose geometry.
+    this.disposed = true;
     this.group.removeFromParent();
     this.path.dispose();
     this.material.dispose();
@@ -134,14 +140,18 @@ export class Vehicle {
   }
 
   public simulate(delta: number) {
+    if (this.disposed) {
+      throw new Error(`${this.name} - attempt to simulate disposed vehicle`);
+    }
     const sim = getSimulator();
     this.group.position.copy(this.position);
     if (this.primary) {
-      let numerical = false;
+      let useNumerical = false;
       let atmoDensity = 0;
 
       // TODO: This doesn't take oblicity into account
       const altitude = this.primary.position.distanceTo(this.position) - this.primary.radius;
+      this.drag.set(0, 0, 0);
       if (altitude <= 0) {
         console.log('removing');
         this.velocity.set(0, 0, 0);
@@ -151,33 +161,47 @@ export class Vehicle {
       } else {
         atmoDensity = this.primary.getAtmosphereDensity(altitude);
         if (atmoDensity > 0) {
-          // console.log(atmoDensity);
-          numerical = true;
+          useNumerical = true;
+          this.drag
+            .copy(this.velocity)
+            .multiplyScalar(Math.min(0.01, -atmoDensity * 0.001 * this.velocity.length()));
         }
       }
 
-      if (numerical) {
-        // Leapfrog integration
+      this.accel.set(0, 0, 0);
+      const thrustAccel = sim.commandState.selected === this ? sim.commandState.thrust : 0;
+      if (thrustAccel !== 0) {
+        this.accel
+          .copy(this.velocity)
+          .normalize()
+          .multiplyScalar(thrustAccel * 2);
+        useNumerical = true;
+      }
+
+      // If we're accelerating, then we have to use numerical methods rather than exact solutions.
+      if (useNumerical) {
         const steps = 32;
         const theta = delta / steps;
         for (let i = 0; i < steps; i++) {
+          // Leapfrog integration - use 1/2 velocity both before and after velocity update.
           this.position.addScaledVector(this.velocityPrev, theta * 0.5);
+          // Compute gravity at midpoint of time step.
           gravity.copy(this.primary.position).sub(this.position);
           const distance = gravity.length();
           gravity.multiplyScalar((G * this.primary.mass) / distance ** 3);
           this.velocity.addScaledVector(gravity, theta);
+
+          // We could probably leapfrog these too - not sure that level of accuracy is needed.
+          // The main thing we care about is that orbits are stable and match the kepler eqns.
+          this.velocity.addScaledVector(this.drag, theta);
+          this.velocity.addScaledVector(this.accel, theta);
+
           this.position.addScaledVector(this.velocity, theta * 0.5);
           this.velocityPrev.copy(this.velocity);
         }
 
-        drag.copy(this.velocity).multiplyScalar(delta * 0.0001);
-        this.velocity.sub(drag);
-        this.orbitChanged = true;
+        this.calcOrbit();
       } else {
-        if (this.orbitChanged) {
-          this.orbitChanged = false;
-          this.calcOrbit();
-        }
         const n = this.orbit.meanMotion();
         const t = n * delta;
         if (this.orbit.e < 1) {
@@ -193,6 +217,7 @@ export class Vehicle {
           this.orbit.toInertial(this.position, this.velocity, ta);
           this.position.add(this.primary.position);
         }
+        this.velocityPrev.copy(this.velocity);
       }
 
       // velocityCopy.copy(this.velocity).normalize();
@@ -204,12 +229,15 @@ export class Vehicle {
   }
 
   public animate() {
-    if (this.orbitChanged) {
-      this.orbitChanged = false;
-      this.calcOrbit();
+    if (this.disposed) {
+      throw new Error(`${this.name} - attempt to animate disposed vehicle`);
     }
+    // if (this.orbitChanged) {
+    //   this.orbitChanged = false;
+    //   this.calcOrbit();
+    // }
     const sim = getSimulator();
-    const selected = this === sim.selection.picked || this === sim.selection.selected;
+    const selected = this === sim.commandState.picked || this === sim.commandState.selected;
     this.group.position.copy(this.position);
     const distToCamera = sim.camera.position.distanceTo(this.position);
     this.label.scale.setScalar(distToCamera / 2e7);
@@ -221,11 +249,11 @@ export class Vehicle {
     // this.orbit.getDirectionVectors(uDirection, vDirection, wDirection, ta);
 
     // if (this.primary) {
-      // directionTemp.copy(this.position).sub(this.primary?.position).normalize();
-      // this.distArrow.setDirection(directionTemp);
-      // const ta = this.orbit.trueAnomalyFromMean(this.orbit.ma);
-      // this.distArrow.setLength(this.orbit.distanceToPrimary());
-      // this.distArrow.updateMatrix();
+    // directionTemp.copy(this.position).sub(this.primary?.position).normalize();
+    // this.distArrow.setDirection(directionTemp);
+    // const ta = this.orbit.trueAnomalyFromMean(this.orbit.ma);
+    // this.distArrow.setLength(this.orbit.distanceToPrimary());
+    // this.distArrow.updateMatrix();
     // }
 
     // this.uArrow.position.copy(this.position);

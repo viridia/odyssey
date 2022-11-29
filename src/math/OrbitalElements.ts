@@ -267,9 +267,16 @@ export class OrbitalElements {
   /** Convert mean anomaly to eccentric anomaly. */
   public eccentricAnomalyFromMean(M: number, tolerance: number = 1e-14): number {
     const { e } = this;
+    // Circular
+    if (Math.abs(e) < SMALL_NUMBER) {
+      return M;
+    }
+    // Hyperbolic
     if (e > 1) {
       return eccentricAnomalyFromMeanHyperbolic(e, M, tolerance);
     }
+    // TODO: Parabolic.
+    // Elliptical
     return eccentricAnomalyFromMeanElliptic(e, M, tolerance);
   }
 

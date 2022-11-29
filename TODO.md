@@ -1,9 +1,11 @@
 # TODO
 
+* Mean anomaly not preserved after exiting numerical mode.
+* Display orbit semi-major axis (and perhaps e?)
+* Display estimated point of impact for orbit.
 * Planet orbit paths.
   * Elliptical
   * Transfer
-* Display orbit semi-major axis
 * Planetary Day Length / Offset
 * Jupiter and other planets.
   * Need orbits.
@@ -24,6 +26,7 @@
 * Launch complices.
 * Collisions
 * Saturn ring shadow.
+* Particle effects for rocket exhaust.
 
 # Notes
 

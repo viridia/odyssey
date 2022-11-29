@@ -37,9 +37,7 @@ export class SelectionRing {
       depthWrite: false,
       side: DoubleSide,
       transparent: true,
-      // blending: AdditiveBlending,
     });
-    // this.material.needsUpdate = true;
 
     this.mesh = new Mesh(this.geometry, this.material);
     this.mesh.receiveShadow = false;
@@ -48,6 +46,7 @@ export class SelectionRing {
     this.mesh.matrixAutoUpdate = true;
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 20;
+    this.mesh.visible = false;
 
     parent.add(this.mesh);
   }
@@ -125,7 +124,7 @@ void main() {
   float alpha = smoothstep(0., 0.005, dist) * smoothstep(thickness + 0.005, thickness, dist);
   float dashes = smoothstep(0.15, 0.17, mod(atan(vUV.x, vUV.y) * 12. / 3.141, 1.));
   alpha *= dashes;
-	vec4 diffuseColor = vec4(diffuse, alpha * 0.7);
+	vec4 diffuseColor = vec4(diffuse, alpha * 0.4);
 
   ${ShaderChunk.map_fragment}
   ${ShaderChunk.alphatest_fragment}

@@ -1,10 +1,3 @@
-window; // import {
-//   CoefficientCombineRule,
-//   ColliderDesc,
-//   RigidBody,
-//   RigidBodyDesc,
-//   World,
-// } from '@dimforge/rapier3d-compat';
 import {
   AmbientLight,
   Clock,
@@ -19,7 +12,6 @@ import {
 } from 'three';
 import { EventBus } from '../lib/EventBus';
 import { Stars } from './stars/Stars';
-// import { getRapier } from './physics/rapier';
 import { Orrery } from './planets/Orrery';
 import { Vehicle } from './vehicles/Vehicle';
 import { Accessor, createSignal, Setter } from 'solid-js';
@@ -28,14 +20,24 @@ import { Compass } from './overlays/Compass';
 import { CelestialBody } from './planets/CelestialBody';
 import { createStore, SetStoreFunction, Store } from 'solid-js/store';
 
-// const cameraOffset = new Vector3();
+// Physics engine stuff. Saving in case I decide to add collisions / crashes later.
+// That'll be "fun".
+// import {
+//   CoefficientCombineRule,
+//   ColliderDesc,
+//   RigidBody,
+//   RigidBodyDesc,
+//   World,
+// } from '@dimforge/rapier3d-compat';
+// import { getRapier } from './physics/rapier';
 
 export const MIN_CAMERA_DISTANCE = 100;
 export const MAX_CAMERA_DISTANCE = 5_000_000_000_000; // A little larger than pluto's orbit
 
-interface ISelectionStore {
+interface ICommandState {
   picked: Vehicle | CelestialBody | null;
   selected: Vehicle | CelestialBody | null;
+  thrust: number;
 }
 
 /** Contains the three.js renderer and handles to important resources. */
@@ -64,20 +66,22 @@ export class Simulator {
   public readonly setSpeed: Setter<number>;
   public readonly timeScale = [1, 10, 1e2, 2.5e2, 1e3, 2.5e3, 1e4, 2.5e4, 1e5, 2.5e5, 1e6];
 
-  public readonly selection: Store<ISelectionStore>;
+  /** Store of reactive vars from user commands (pick, select, thrust, etc.) */
+  public readonly commandState: Store<ICommandState>;
 
   private mount: HTMLElement | undefined;
   private frameId: number | null = null;
   private clock = new Clock();
-  // private physicsWorld?: World;
   private stars: Stars;
   private vehicles: Vehicle[] = [];
 
   private resize: ResizeObserver;
-  private setSelection: SetStoreFunction<ISelectionStore>;
+  private setCommandState: SetStoreFunction<ICommandState>;
   private cameraEase = 0;
   private prevViewCenter = new Vector3();
 
+  // Physics engine stuff.
+  // private physicsWorld?: World;
   // private sphereBody?: RigidBody;
 
   constructor(public readonly settings: ISettings) {
@@ -96,9 +100,10 @@ export class Simulator {
 
     [this.speed, this.setSpeed] = createSignal(0);
     [this.paused, this.setPaused] = createSignal(true);
-    [this.selection, this.setSelection] = createStore<ISelectionStore>({
+    [this.commandState, this.setCommandState] = createStore<ICommandState>({
       picked: null,
       selected: null,
+      thrust: 0,
     });
 
     this.scene.add(this.eclipticGroup);
@@ -107,7 +112,7 @@ export class Simulator {
     this.planets = new Orrery();
     this.planets.simulate(0);
     this.planets.addToScene(this.eclipticGroup);
-    this.setSelection('selected', this.planets.earth);
+    this.setCommandState('selected', this.planets.earth);
 
     this.compass = new Compass(this.scene);
 
@@ -224,7 +229,7 @@ export class Simulator {
   }
 
   public updateCamera() {
-    const viewTarget = this.selection.selected;
+    const viewTarget = this.commandState.selected;
     if (viewTarget) {
       if (this.cameraEase > 0) {
         viewTarget.getWorldPosition(viewCenter2);
@@ -310,9 +315,13 @@ export class Simulator {
     return light;
   }
 
+  public setThrust(thrust: number) {
+    this.setCommandState('thrust', thrust);
+  }
+
   public setSelectedObject(selected: Vehicle | CelestialBody | null) {
     this.prevViewCenter.copy(this.viewCenter);
-    this.setSelection({ selected });
+    this.setCommandState({ selected });
     this.cameraEase = 1;
   }
 
@@ -355,7 +364,7 @@ export class Simulator {
     });
 
     if (closestObject) {
-      this.setSelection('picked', closestObject);
+      this.setCommandState('picked', closestObject);
     } else {
       // Pick vehicles based on radius and distance
       let closestDistance = Infinity;
@@ -373,7 +382,7 @@ export class Simulator {
           closestObject = planet;
         }
       });
-      this.setSelection('picked', closestObject);
+      this.setCommandState('picked', closestObject);
     }
   }
 }

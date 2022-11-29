@@ -11,6 +11,8 @@ export const NavigationControls: VoidComponent<{ viewport?: HTMLElement }> = pro
     orbitDown: 'k',
     zoomOut: ',',
     zoomIn: '.',
+    thrustRvs: 'shift+v',
+    thrust: 'v',
   });
   let dragging = false; // If we're currently dragging
   let didDrag = false; // If mouse moved while dragging
@@ -39,6 +41,8 @@ export const NavigationControls: VoidComponent<{ viewport?: HTMLElement }> = pro
 
     onCleanup(
       sim.events.subscribe('animate', deltaTime => {
+        sim.setThrust((signals.thrust ? 1 : 0) + (signals.thrustRvs ? -1 : 0));
+
         sim.cameraAzimuthAngle = MathUtils.euclideanModulo(
           sim.cameraAzimuthAngle - deltaTime * azimuth,
           Math.PI * 2
@@ -93,7 +97,7 @@ export const NavigationControls: VoidComponent<{ viewport?: HTMLElement }> = pro
         viewport.releasePointerCapture(e.pointerId);
         dragging = false;
         if (!didDrag) {
-          sim.setSelectedObject(sim.selection.picked);
+          sim.setSelectedObject(sim.commandState.picked);
         }
       };
 

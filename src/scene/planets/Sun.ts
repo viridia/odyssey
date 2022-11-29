@@ -30,6 +30,7 @@ interface IPlanetOptions {
 // const loader = new TextureLoader();
 
 export class Sun extends CelestialBody {
+  public readonly type = 'star';
   public mesh: Mesh<BufferGeometry, MeshBasicMaterial>;
   public geometry: BufferGeometry;
   private material: MeshBasicMaterial;

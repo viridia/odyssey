@@ -42,7 +42,7 @@ export class FlightPathOverlay {
       const taAsymptote = Math.acos(-1 / elements.e) * (1 - safetyMargin);
 
       // Hyperbolic or parabolic. Iterating over true anomaly is good enough for hyperbolics.
-      const stepSize = taAsymptote / 32;
+      const stepSize = taAsymptote / 1024;
       for (let phi = -taAsymptote; phi < taAsymptote + safetyMargin; phi += stepSize) {
         if (elements.toInertial(v, undefined, phi)) {
           position.push(...v.toArray());
@@ -50,7 +50,7 @@ export class FlightPathOverlay {
       }
     } else {
       // Elliptical
-      const steps = 1024;
+      const steps = 4096;
       for (let phi = 0; phi <= steps; phi++) {
         const angle = (phi * Math.PI * 2) / steps;
         const ta = elements.trueAnomalyFromEccentric(angle);

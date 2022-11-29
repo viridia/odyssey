@@ -1,7 +1,10 @@
 import { Group, Vector3 } from 'three';
 
+export type CelestialBodyType = 'planet' | 'moon' | 'star';
+
 export abstract class CelestialBody {
   // This group's matrix holds the transform for the body, not it's rotation.
+  public abstract readonly type: CelestialBodyType;
   public readonly group = new Group();
   public readonly satellites: CelestialBody[] = [];
 

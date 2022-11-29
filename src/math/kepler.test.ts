@@ -21,7 +21,13 @@ describe('kepler', function () {
     [0, 0.1],
     [0, Math.PI],
     [0, Math.PI * 2],
-  ])('M -> E e=%d f=%d', (e, f) => {
+  ])('reference cases M -> E e=%d f=%d', (e, f) => {
+    expect(eccentricAnomalyFromMeanElliptic(e, f)).toBeCloseTo(refEFromM(e, f), 8);
+  });
+
+  test.each([
+    [0.9831724272587135, 0.0002891749156797019],
+  ])('problematic cases M -> E e=%d f=%d', (e, f) => {
     expect(eccentricAnomalyFromMeanElliptic(e, f)).toBeCloseTo(refEFromM(e, f), 8);
   });
 });
@@ -58,3 +64,5 @@ export function refEFromM(e: number, M: number, tolerance: number = 1e-14): numb
   }
   return E;
 }
+
+// N / R failed: e = , M = 0.0002891749156797019, E0 = 0.001127829094786723 tolerance = 1e-14

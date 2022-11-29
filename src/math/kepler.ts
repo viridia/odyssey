@@ -10,15 +10,29 @@ export function eccentricAnomalyFromMeanElliptic(
   let E0 =
     M +
     ((-1 / 2) * e ** 3 + e + (e ** 2 + (3 / 2) * Math.cos(M) * e ** 3) * Math.cos(M)) * Math.sin(M);
+  if (globalThis.isNaN(E0)) {
+    console.error(`E0 is NaN: e = ${e}, M = ${M}`);
+    throw new Error(`ecc: E0 NaN`);
+  }
 
-  const result = newtonRaphson(
-    E => E - e * Math.sin(E) - M,
-    E => 1 - e * Math.cos(E),
-    E0,
-    { tolerance, maxIterations: 20 }
-  );
-
-  return MathUtils.euclideanModulo(result, Math.PI * 2);
+  try {
+    const result = newtonRaphson(
+      E => E - e * Math.sin(E) - M,
+      E => 1 - e * Math.cos(E),
+      E0,
+      { tolerance, maxIterations: 20 }
+    );
+    return MathUtils.euclideanModulo(result, Math.PI * 2);
+  } catch (ex) {
+    // Fall back to using bisect if newton failed.
+    return bisect(E => E - e * Math.sin(E) - M, 0, Math.PI * 2, {
+      maxIterations: 200,
+    });
+    // console.error(
+    //   `eccentricAnomalyFromMeanElliptic failed: e = ${e}, M = ${M}, E0 = ${E0} tolerance = ${tolerance}`
+    // );
+    // throw ex;
+  }
 }
 
 export function eccentricAnomalyFromMeanHyperbolic(
@@ -28,10 +42,15 @@ export function eccentricAnomalyFromMeanHyperbolic(
 ): number {
   // let F0 = M;
 
-  // Using bisect because newton-raphson doesn't work for some reason.
-  return bisect(F => e * Math.sinh(F) - F - M, 0, Math.PI * 2, {
-    maxIterations: 200,
-  });
+  try {
+    // Using bisect because newton-raphson doesn't work for some reason.
+    return bisect(F => e * Math.sinh(F) - F - M, 0, Math.PI * 2, {
+      maxIterations: 200,
+    });
+  } catch (ex) {
+    console.error(`eccentricAnomalyFromMeanHyperbolic failed: e = ${e}, M = ${M}`);
+    throw ex;
+  }
 
   // const result = newtonRaphson(
   //   F => e * Math.sinh(F) - F - M,
