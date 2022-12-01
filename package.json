@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@types/three": "^0.146.0",
+    "astronomy-engine": "^2.1.12",
     "dolmen": "^0.2.1",
     "dolmen-keys": "^0.0.5",
     "solid-js": "^1.6.2",

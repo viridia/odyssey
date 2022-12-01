@@ -1,5 +1,6 @@
 # Acknowledgements
 
+* Astronomy Engine: https://www.npmjs.com/package/astronomy-engine
 * Solar system textures: https://www.solarsystemscope.com/textures/
 * More NASA textures: https://solarsystem.nasa.gov/news/1889/jupiter-resources
 * Tables of planetary properties: https://www.astronomynotes.com/tables/tablesb.htm

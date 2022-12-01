@@ -131,10 +131,10 @@ export class Vehicle {
     this.velocityPrev.copy(this.velocity);
     if (this.primary) {
       r.copy(this.position).sub(this.primary.position);
-      rDot.copy(this.velocity); //.sub(this.primary.velocity);
+      rDot.copy(this.velocity); // .sub(this.primary.velocity);
       this.orbit.setMasses(this.primary.mass);
       this.orbit.fromStateVector(r, rDot);
-      this.orbit.ma = -this.orbit.meanAnomalyFromTrue(-this.orbit.v);
+      this.orbit.ma = this.orbit.meanAnomalyFromTrue(this.orbit.v);
       this.path.update(this.primary, this.orbit);
     }
   }
@@ -232,10 +232,6 @@ export class Vehicle {
     if (this.disposed) {
       throw new Error(`${this.name} - attempt to animate disposed vehicle`);
     }
-    // if (this.orbitChanged) {
-    //   this.orbitChanged = false;
-    //   this.calcOrbit();
-    // }
     const sim = getSimulator();
     const selected = this === sim.commandState.picked || this === sim.commandState.selected;
     this.group.position.copy(this.position);

@@ -1,6 +1,7 @@
 import { Color, Object3D, Vector3 } from 'three';
 import { Planet } from './Planet';
 import { Sun } from './Sun';
+import { Body } from 'astronomy-engine';
 
 import mercuryTexture from './textures/mercury.jpeg';
 import venusTexture from './textures/venus_atmosphere.jpeg';
@@ -43,17 +44,20 @@ export class Orrery {
       luminousColor: new Color(1.0, 1.0, 1.0).convertSRGBToLinear(),
       luminousDistance: 5_000_000_000 * KM,
     });
-    // this.sun.addToScene(group);
 
-    this.mercury = new Planet('Mercury', 2.4397e6, {
+    this.mercury = new Planet('Mercury', {
+      primary: this.sol,
+      radius: 2.4397e6,
+      body: Body.Mercury,
       mass: 0.107 * MEarth,
       texture: mercuryTexture,
       dayLength: 58.785 * DAY,
     });
-    this.mercury.group.position.y = 1.4757e11;
-    this.mercury.setPrimary(this.sol);
 
-    this.venus = new Planet('Venus', 4_212_300, {
+    this.venus = new Planet('Venus', {
+      primary: this.sol,
+      radius: 4_212_300,
+      body: Body.Venus,
       mass: 0.107 * MEarth,
       texture: venusTexture,
       // atmosphereThickness: 200_000,
@@ -61,10 +65,11 @@ export class Orrery {
       // atmosphereOpacity: 0.2,
       dayLength: 243.686 * DAY,
     });
-    this.venus.group.position.y = 1.4767e11;
-    this.venus.setPrimary(this.sol);
 
-    this.earth = new Planet('Earth', 6.378e6, {
+    this.earth = new Planet('Earth', {
+      primary: this.sol,
+      radius: 6.378e6,
+      body: Body.Earth,
       mass: MEarth,
       oblateness: 0.00335,
       texture: earthTexture,
@@ -78,10 +83,10 @@ export class Orrery {
       luminousDistance: 10e8,
       dayLength: DAY,
     });
-    this.earth.group.position.y = 1.4777e11;
-    this.earth.setPrimary(this.sol);
 
-    this.moon = new Planet('Moon', 1.7374e6, {
+    this.moon = new Planet('Moon', {
+      primary: this.earth,
+      radius: 1.7374e6,
       mass: 7.34767309e22,
       oblateness: 0.00648,
       texture: moonTexture,
@@ -89,9 +94,11 @@ export class Orrery {
     });
     this.moon.group.position.x = 3.844e8;
     this.moon.group.position.applyAxisAngle(ZPOS, -1.5);
-    this.moon.setPrimary(this.earth);
 
-    this.mars = new Planet('Mars', 4_212_300, {
+    this.mars = new Planet('Mars', {
+      primary: this.sol,
+      radius: 4_212_300,
+      body: Body.Mars,
       mass: 0.107 * MEarth,
       oblateness: 0.00648,
       texture: marsTexture,
@@ -100,10 +107,11 @@ export class Orrery {
       atmosphereOpacity: 0.2,
       dayLength: 24.6229 * HOUR,
     });
-    this.mars.group.position.y = 1.4787e11;
-    this.mars.setPrimary(this.sol);
 
-    this.jupiter = new Planet('Jupiter', 6.9911e7, {
+    this.jupiter = new Planet('Jupiter', {
+      primary: this.sol,
+      radius: 6.9911e7,
+      body: Body.Jupiter,
       mass: 0.107 * MEarth,
       oblateness: 0.06487,
       texture: jupiterTexture,
@@ -112,10 +120,11 @@ export class Orrery {
       atmosphereOpacity: 0.2,
       dayLength: 9.925 * HOUR,
     });
-    this.jupiter.group.position.y = 1.4797e11;
-    this.jupiter.setPrimary(this.sol);
 
-    this.saturn = new Planet('Saturn', 5.8232e7, {
+    this.saturn = new Planet('Saturn', {
+      primary: this.sol,
+      radius: 5.8232e7,
+      body: Body.Saturn,
       mass: 0.107 * MEarth,
       oblateness: 0.09796,
       texture: saturnTexture,
@@ -124,10 +133,11 @@ export class Orrery {
       atmosphereOpacity: 0.2,
       dayLength: 10.656 * HOUR,
     });
-    this.saturn.group.position.y = 1.4807e11;
-    this.saturn.setPrimary(this.sol);
 
-    this.uranus = new Planet('Uranus', 2.5362e7, {
+    this.uranus = new Planet('Uranus', {
+      primary: this.sol,
+      radius: 2.5362e7,
+      body: Body.Uranus,
       mass: 0.107 * MEarth,
       oblateness: 0.02293,
       texture: uranusTexture,
@@ -136,10 +146,11 @@ export class Orrery {
       atmosphereOpacity: 0.2,
       dayLength: 17.24 * HOUR,
     });
-    this.uranus.group.position.y = 1.4817e11;
-    this.uranus.setPrimary(this.sol);
 
-    this.neptune = new Planet('Neptune', 2.4622e7, {
+    this.neptune = new Planet('Neptune', {
+      primary: this.sol,
+      radius: 2.4622e7,
+      body: Body.Neptune,
       mass: 0.107 * MEarth,
       oblateness: 0.01708,
       texture: neptuneTexture,
@@ -148,14 +159,12 @@ export class Orrery {
       atmosphereOpacity: 0.2,
       dayLength: 16.11 * HOUR,
     });
-    this.neptune.group.position.y = 1.4827e11;
-    this.neptune.setPrimary(this.sol);
   }
 
   public simulate(deltaTime: number) {
     this.sol.simulate(deltaTime);
-    this.moon.group.position.applyAxisAngle(ZPOS, deltaTime * 0.01);
-    this.moon.position.applyAxisAngle(ZPOS, deltaTime * 0.01);
+    // this.moon.group.position.applyAxisAngle(ZPOS, deltaTime * 0.01);
+    // this.moon.position.applyAxisAngle(ZPOS, deltaTime * 0.01);
   }
 
   public animate(deltaTime: number) {
@@ -173,7 +182,7 @@ export class Orrery {
     const visit = (planet: CelestialBody) => {
       callback(planet);
       planet.satellites.forEach(visit);
-    }
+    };
 
     visit(this.sol);
   }

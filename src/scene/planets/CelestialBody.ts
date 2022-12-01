@@ -5,6 +5,7 @@ export type CelestialBodyType = 'planet' | 'moon' | 'star';
 export abstract class CelestialBody {
   // This group's matrix holds the transform for the body, not it's rotation.
   public abstract readonly type: CelestialBodyType;
+  public abstract readonly velocity: Vector3;
   public readonly group = new Group();
   public readonly satellites: CelestialBody[] = [];
 

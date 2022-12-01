@@ -6,6 +6,7 @@ import {
   Object3D,
   PointLight,
   SphereGeometry,
+  Vector3,
 } from 'three';
 import { invariant } from '../../lib/invariant';
 import { CelestialBody } from './CelestialBody';
@@ -31,6 +32,7 @@ interface IPlanetOptions {
 
 export class Sun extends CelestialBody {
   public readonly type = 'star';
+  public readonly velocity = new Vector3();
   public mesh: Mesh<BufferGeometry, MeshBasicMaterial>;
   public geometry: BufferGeometry;
   private material: MeshBasicMaterial;

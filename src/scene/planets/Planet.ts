@@ -15,16 +15,27 @@ import {
   Vector3,
 } from 'three';
 import { createLabel, TextLabel } from '../overlays/Label';
+import { MarkerDisc } from '../overlays/MarkerDisc';
 import { SelectionRing } from '../overlays/SelectionRing';
 import { getSimulator } from '../Simulator';
 import { AtmosphereHaloMaterial } from './AtmosphereHaloMaterial';
 import { CelestialBody, CelestialBodyType } from './CelestialBody';
+import { Body, BaryState, RotateState, Rotation_EQJ_ECL, KM_PER_AU } from 'astronomy-engine';
+import { SECONDS_PER_DAY } from '../../math/constants';
+import { PlanetaryOrbitOverlay } from '../overlays/PlanetaryOrbitOverlay';
+import { OrbitalElements } from '../../math/OrbitalElements';
 
 const WIDTH_SEGMENTS = 96;
 const HEIGHT_SEGMENTS = 48;
 const XPOS = new Vector3(1, 0, 0);
 
+const MARKER_COLOR = new Color(0.3, 0.3, 0.8).convertSRGBToLinear();
+const MARKER_SELECTED_COLOR = new Color(0.8, 0.8, 1.0).convertSRGBToLinear();
+
 interface IPlanetOptions {
+  primary: CelestialBody;
+  radius: number;
+  body?: Body;
   mass?: number;
   oblateness?: number;
   texture?: string;
@@ -50,6 +61,8 @@ export class Planet extends CelestialBody {
   public mesh: Mesh<BufferGeometry, MeshStandardMaterial>;
   public geometry: BufferGeometry;
   public material: MeshStandardMaterial;
+  public readonly velocity = new Vector3();
+
   private atmoMesh?: Mesh<BufferGeometry, Material>;
   private atmoGeometry?: BufferGeometry;
   private atmoMaterial?: AtmosphereHaloMaterial;
@@ -59,16 +72,42 @@ export class Planet extends CelestialBody {
 
   private dayLength = 0;
   private dayRotation = 0;
+  private marker: MarkerDisc;
   private label: TextLabel;
   private selection: SelectionRing;
+  private elements?: OrbitalElements;
+  private orbit = new PlanetaryOrbitOverlay();
   // private yearLength;
 
   // Need:
   // axis direction
 
-  constructor(name: string, radius: number, private options: IPlanetOptions = {}) {
-    super(name, radius, options.mass ?? 1);
-    this.type = 'planet';
+  constructor(name: string, private options: IPlanetOptions) {
+    super(name, options.radius, options.mass ?? 1);
+    this.type = options.primary.type === 'star' ? 'planet' : 'moon';
+    options.primary.group.add(this.group);
+    options.primary.satellites.push(this);
+
+    const radius = options.radius;
+    if (options.body) {
+      // TODO: Use simulator date.
+      const st = BaryState(options.body, new Date());
+      const st2 = RotateState(Rotation_EQJ_ECL(), st);
+      this.group.position.set(
+        st2.x * KM_PER_AU * 1000,
+        st2.y * KM_PER_AU * 1000,
+        st2.z * KM_PER_AU * 1000
+      );
+      this.velocity.set(
+        (st2.vx * KM_PER_AU * 1000) / SECONDS_PER_DAY,
+        (st2.vy * KM_PER_AU * 1000) / SECONDS_PER_DAY,
+        (st2.vz * KM_PER_AU * 1000) / SECONDS_PER_DAY
+      );
+      this.elements = new OrbitalElements(options.primary.mass, options.mass ?? 0);
+      this.elements.fromStateVector(this.group.position, this.velocity);
+      this.orbit.update(options.primary, this.elements);
+    }
+
     this.material = new MeshStandardMaterial({
       roughness: options.roughness ?? 1,
     });
@@ -138,6 +177,14 @@ export class Planet extends CelestialBody {
     // }
     // orbit.updateGeometry(position);
 
+    // Small LOD sphere to display when planet gets very small.
+    this.marker = new MarkerDisc(this.group, {
+      radius: 0.0025,
+      color: MARKER_COLOR,
+      nominalDistance: radius * 200,
+      minDistance: radius * 20,
+    });
+
     this.label = createLabel(name, {
       nominalDistance: 1e5,
       minDistance: 1e4,
@@ -158,20 +205,11 @@ export class Planet extends CelestialBody {
     this.atmoMesh?.removeFromParent();
     this.atmoMaterial?.dispose();
     this.atmoGeometry?.dispose();
+    this.marker.dispose();
     this.label.removeFromParent();
     this.label.dispose();
     this.selection.dispose();
-  }
-
-  public setPrimary(primary: CelestialBody | null = null): this {
-    if (primary) {
-      this.type = primary.type === 'star' ? 'planet' : 'moon';
-      primary.group.add(this.group);
-      primary.satellites.push(this);
-    } else {
-      this.group.removeFromParent();
-    }
-    return this;
+    this.orbit.dispose();
   }
 
   public getAtmosphereDensity(altitude: number) {
@@ -226,10 +264,16 @@ export class Planet extends CelestialBody {
 
     this.satellites.forEach(sat => sat.animate(delta));
 
+    this.marker.setColor(this === sim.commandState.selected ? MARKER_SELECTED_COLOR : MARKER_COLOR);
+
     const distToCamera = sim.camera.position.distanceTo(this.position);
     this.label.scale.setScalar(distToCamera / 2e7);
     this.label.visible = this === sim.commandState.picked;
-    this.selection.setVisible(this === sim.commandState.picked && this !== sim.commandState.selected);
+    this.selection.setVisible(
+      this === sim.commandState.picked && this !== sim.commandState.selected
+    );
+
+    this.orbit.animate();
   }
 }
 

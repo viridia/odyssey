@@ -32,7 +32,7 @@ import { createStore, SetStoreFunction, Store } from 'solid-js/store';
 // import { getRapier } from './physics/rapier';
 
 export const MIN_CAMERA_DISTANCE = 100;
-export const MAX_CAMERA_DISTANCE = 5_000_000_000_000; // A little larger than pluto's orbit
+export const MAX_CAMERA_DISTANCE = 2e13; // A little larger than pluto's orbit
 
 interface ICommandState {
   picked: Vehicle | CelestialBody | null;
@@ -88,7 +88,7 @@ export class Simulator {
     simulator = this;
 
     this.animate = this.animate.bind(this);
-    this.camera = new PerspectiveCamera(30, 1, 10, 5_000_000_000_000);
+    this.camera = new PerspectiveCamera(30, 1, 10, 5e13);
 
     this.createAmbientLight();
     this.renderer = this.createRenderer();
@@ -130,14 +130,14 @@ export class Simulator {
     vh2.velocity.set(-6588, 0, 50); // m/s
     this.addVehicle(vh2);
 
-    const vh2a = new Vehicle('TestVehicle2a', this.scene);
+    const vh2a = new Vehicle('AtmoDragTest', this.scene);
     vh2a.setPrimary(this.planets.earth);
     vh2a.position.copy(this.planets.earth.position);
     vh2a.position.x += this.planets.earth.radius * 1.9;
     vh2a.velocity.set(0, 4818, 50); // m/s
     this.addVehicle(vh2a);
 
-    const vh3 = new Vehicle('TestVehicle3', this.scene);
+    const vh3 = new Vehicle('CollisionTest1', this.scene);
     vh3.setPrimary(this.planets.earth);
     vh3.position.copy(this.planets.earth.position);
     vh3.position.x += this.planets.earth.radius * 1.95;
@@ -152,12 +152,20 @@ export class Simulator {
     vh4.velocity.set(0, 0, 1500); // m/s
     this.addVehicle(vh4);
 
-    const vh5 = new Vehicle('TestVehicle5', this.scene);
+    const vh5 = new Vehicle('Hyperbolic', this.scene);
     vh5.setPrimary(this.planets.earth);
     vh5.position.copy(this.planets.earth.position);
     vh5.position.x += this.planets.earth.radius * 2.1;
     vh5.velocity.set(0, 7988, 50); // m/s
     this.addVehicle(vh5);
+
+    const vh6 = new Vehicle('TestVehicle5', this.scene);
+    vh6.setPrimary(this.planets.earth);
+    vh6.position.copy(this.planets.earth.position);
+    vh6.position.x += this.planets.earth.radius * 1.1;
+    vh6.position.y -= this.planets.earth.radius * 1.5;
+    vh6.velocity.set(1000, 2488, 0); // m/s
+    this.addVehicle(vh6);
 
     this.updateCamera();
   }

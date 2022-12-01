@@ -1,4 +1,4 @@
-import { MathUtils, Matrix4, Vector3 } from 'three';
+import { MathUtils, Matrix4, Quaternion, Vector3 } from 'three';
 import { G } from './constants';
 import { eccentricAnomalyFromMeanElliptic, eccentricAnomalyFromMeanHyperbolic } from './kepler';
 
@@ -13,20 +13,23 @@ import { eccentricAnomalyFromMeanElliptic, eccentricAnomalyFromMeanHyperbolic } 
     * https://space.stackexchange.com/questions/24646/finding-x-y-z-vx-vy-vz-from-hyperbolic-orbital-elements
     * https://github.com/RazerM/orbital
     * https://www.bogan.ca/orbits/kepler/orbteqtn.html
+    * https://www.orbiter-forum.com/threads/quaternions-rotations-and-orbital-elements.37264/
  */
 
 const SMALL_NUMBER = 1e-15;
 
 export class OrbitalElements {
+  /** G * (m1 + m2) */
+  public mu: number = 0;
   /** Semi-major axis */
   public a: number = 0;
   /** Eccentricity */
   public e: number = 0;
   /** Inclination */
   public i: number = 0;
-  /** Longitude of ascending node */
+  /** Longitude of ascending node (Upper-case Omega) */
   public raan: number = 0;
-  /** Argument of periapsis */
+  /** Argument of periapsis (lower-case omega) */
   public ap: number = 0;
   /** True anomaly */
   public v: number = 0;
@@ -38,31 +41,37 @@ export class OrbitalElements {
   private ev = new Vector3();
 
   // Matrix used to transform from perifocal to inertial coordinates (relative to primary).
-  private matrix = new Matrix4();
-  private matrixRotate = new Matrix4();
-  private matrixNeedsUpdate = true;
+  public rotation = new Quaternion();
 
-  constructor(private m1: number, private m2 = 0) {}
+  constructor(m1: number, m2 = 0) {
+    this.mu = G * (m1 + m2);
+  }
 
   public setMasses(m1: number, m2: number = 0) {
-    this.m1 = m1;
-    this.m2 = m2;
+    this.mu = G * (m1 + m2);
+  }
+
+  public setMu(mu: number) {
+    this.mu = mu;
   }
 
   public fromStateVector(pos: Vector3, vel: Vector3) {
-    const { m1, m2 } = this;
-    const mu = G * (m1 + m2);
+    const { mu } = this;
 
+    // Vector of angular momentum, orthogonal to the plane of rotation.
     // let h = vector.cross(pos, vel);
     const h = this.h;
     h.copy(pos).cross(vel);
+    const isFlat = Math.abs(h.x) + Math.abs(h.y) < SMALL_NUMBER;
 
-    // Cross product of [0, 0, 1] with h
+    // Ascending node vector. This will be zero-length vector if orbit is in equatorial plane.
+    // Cross product of [0, 0, 1] with h.
     const n = this.n;
-    n.x = -1 * h.y;
-    n.y = 1 * h.x;
+    n.x = -h.y;
+    n.y = h.x;
     n.z = 0;
 
+    // Eccentricity vector, points in direction towards periapsis.
     // ev = 1 / mu * ((norm(v) ** 2 - mu / norm(r)) * r - dot(r, v) * v)
     const ev = this.ev;
     ev.copy(pos)
@@ -71,23 +80,46 @@ export class OrbitalElements {
       .divideScalar(mu);
     const e = ev.length();
 
+    // Build a quaternion from the basis vectors of the orbit. This is much more numerically
+    // robust than fussing around with angles.
+    en.copy(ev).normalize();
+    hn.copy(h).normalize();
+    an.copy(hn).cross(en);
+    mTemp.set(
+      en.x, an.x, hn.x, 0,
+      en.y, an.y, hn.y, 0,
+      en.z, an.z, hn.z, 0,
+      0, 0, 0, 1);
+    this.rotation.setFromRotationMatrix(mTemp);
+
     // Semi-latus rectum
     const p = h.lengthSq() / mu;
+
+    // Apoapsis distance - undefined when trajectory is parabolic.
     let a = Math.abs(e - 1) > SMALL_NUMBER ? p / (1 - e ** 2) : 0;
 
     // Orbital inclication
-    let i = Math.atan2(Math.hypot(h.x, h.y), h.z);
+    const i = Math.atan2(Math.sqrt(h.x ** 2 + h.y ** 2), h.z);
 
     // Right ascension
-    let raan = Math.atan2(h.x, -h.y);
-    // let raan = Math.acos(n.x / n.length());
-    if (n.y < 0) {
-      raan = Math.PI * 2 - raan;
+    let raan = 0;
+    if (!isFlat) {
+      // raan = Math.atan2(h.x, -h.y);
+      raan = Math.acos(n.x / n.length());
+      if (n.y < 0) {
+        raan = Math.PI * 2 - raan;
+      }
     }
 
     let argPe = -angleBetween(n, ev);
-    if (ev.z < 0) {
-      argPe = Math.PI * 2 - argPe;
+    if (isFlat) {
+      argPe = Math.atan2(ev.y, ev.x);
+    } else if (ev.z < 0) {
+      // throw new Error('ev.z < 0');
+      // argPe = Math.PI * 2 - argPe;
+    }
+    if (argPe < 0) {
+      argPe += Math.PI * 2;
     }
 
     let v: number;
@@ -100,13 +132,13 @@ export class OrbitalElements {
       } else {
         v = angleBetween(n, pos);
         if (n.dot(vel) > 0) {
-          v = 2 * Math.PI - v;
+          v = Math.PI * 2 - v;
         }
       }
     } else {
-      if (ev.z < 0) {
-        argPe = 2 * Math.PI - argPe;
-      }
+      // if (ev.z < 0) {
+      //   argPe = Math.PI * 2 - argPe;
+      // }
       v = angleBetween(ev, pos);
       if (pos.dot(vel) < 0) {
         v = Math.PI * 2 - v;
@@ -120,13 +152,12 @@ export class OrbitalElements {
     this.raan = raan;
     this.ap = argPe;
     this.v = v;
-
-    this.matrixNeedsUpdate = true;
   }
 
-  public distanceToPrimary(ta?: number) {
+  public radialDistance(ta?: number) {
     const { e, a } = this;
     const E = this.eccentricAnomalyFromTrue(ta ?? this.v);
+    // TODO: Handle parabolic case
     if (e < 1) {
       return a * (1 - e * Math.cos(E));
       // } else if (e === 1) {
@@ -144,7 +175,7 @@ export class OrbitalElements {
    *    when the true anomaly is out of range)
    */
   public toPerifocal(outPosition: Vector3, outVelocity?: Vector3, ta?: number): boolean {
-    const { e, a, v, m1, m2 } = this;
+    const { e, a, v, mu } = this;
     const f = ta ?? v; // True anomaly
     const p = a * (1 - e ** 2);
     const m = p / (1 + e * Math.cos(f));
@@ -155,10 +186,8 @@ export class OrbitalElements {
     const y = Math.sin(f) * m;
     outPosition.set(x, y, 0);
     if (outVelocity) {
-      const mu = G * (m1 + m2);
-
       const E = this.eccentricAnomalyFromTrue(f);
-      const dist = this.distanceToPrimary(ta);
+      const dist = this.radialDistance(ta);
       if (e > 1) {
         const rho = Math.sqrt(-mu * a) / dist;
         outVelocity.x = -rho * Math.sinh(E);
@@ -180,14 +209,10 @@ export class OrbitalElements {
     if (!this.toPerifocal(outPosition, outVelocity, f)) {
       return false;
     }
-    if (this.matrixNeedsUpdate) {
-      this.updateMatrix();
-    }
-    outPosition.applyMatrix4(this.matrix);
+    outPosition.applyQuaternion(this.rotation);
     if (outVelocity) {
-      outVelocity.applyMatrix4(this.matrixRotate);
+      outVelocity.applyQuaternion(this.rotation);
     }
-    // outVelocity?.applyMatrix4(this.matrix);
     return true;
   }
 
@@ -225,8 +250,7 @@ export class OrbitalElements {
   // }
 
   public meanMotion() {
-    const { m1, m2 } = this;
-    const mu = G * (m1 + m2);
+    const { mu } = this;
     return Math.sqrt(mu / Math.abs(this.a ** 3));
   }
 
@@ -289,17 +313,12 @@ export class OrbitalElements {
     const E = this.eccentricAnomalyFromTrue(ta);
     return this.meanAnomalyFromEccentric(E);
   }
-
-  public updateMatrix() {
-    this.matrix.makeRotationZ(this.ap);
-    this.matrix.premultiply(mTemp.makeRotationX(this.i));
-    this.matrix.premultiply(mTemp.makeRotationZ(this.raan));
-    this.matrixRotate.extractRotation(this.matrix);
-    this.matrixNeedsUpdate = false;
-  }
 }
 
 const mTemp = new Matrix4();
+const en = new Vector3();
+const hn = new Vector3();
+const an = new Vector3();
 
 function angleBetween(a: Vector3, b: Vector3): number {
   const denominator = Math.sqrt(a.lengthSq() * b.lengthSq());

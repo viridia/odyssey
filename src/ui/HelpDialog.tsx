@@ -60,6 +60,12 @@ export const HelpDialog: VoidComponent = () => {
             <li>
               <Shortcut key=".">zoom in</Shortcut>
             </li>
+            <li>
+              <Shortcut key="V">Accelerate (increase velocity)</Shortcut>
+            </li>
+            <li>
+              <Shortcut key="Shift+V">Decelerate (decrease velocity)</Shortcut>
+            </li>
           </ul>
         </Modal.Body>
         <Modal.Footer>
