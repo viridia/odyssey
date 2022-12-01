@@ -316,8 +316,8 @@ export class Simulator {
 
   public createAmbientLight() {
     const light = new AmbientLight(
-      new Color(0xb1e1ff).multiplyScalar(0.2).convertSRGBToLinear(),
-      0.2
+      new Color(0xffffff).convertSRGBToLinear(),
+      0.01
     );
     this.scene.add(light);
     return light;

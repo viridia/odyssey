@@ -1,13 +1,4 @@
-import {
-  Color,
-  Group,
-  MathUtils,
-  Mesh,
-  MeshStandardMaterial,
-  Object3D,
-  SphereGeometry,
-  Vector3,
-} from 'three';
+import { Color, Group, MathUtils, Object3D, Vector3 } from 'three';
 import { G } from '../../math/constants';
 import { OrbitalElements } from '../../math/OrbitalElements';
 import { FlightPathOverlay } from '../overlays/FlightPathOverlay';
@@ -15,6 +6,7 @@ import { createLabel, TextLabel } from '../overlays/Label';
 import { MarkerDisc } from '../overlays/MarkerDisc';
 import { CelestialBody } from '../planets/CelestialBody';
 import { getSimulator } from '../Simulator';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const MARKER_COLOR = new Color(0, 0.6, 0).convertSRGBToLinear();
 const MARKER_SELECTED_COLOR = new Color(0.3, 0.8, 0.3).convertSRGBToLinear();
@@ -27,6 +19,8 @@ const rDot = new Vector3();
 // const uDirection = new Vector3();
 // const vDirection = new Vector3();
 // const wDirection = new Vector3();
+
+const loader = new GLTFLoader();
 
 export class Vehicle {
   // Position and velocity in ecliptic coords.
@@ -48,8 +42,6 @@ export class Vehicle {
   // array of orbital elements with time ranges.
   private path = new FlightPathOverlay();
 
-  private material: MeshStandardMaterial;
-
   private marker: MarkerDisc;
   private label: TextLabel;
 
@@ -66,15 +58,6 @@ export class Vehicle {
   constructor(public readonly name: string, parent: Object3D) {
     parent.add(this.group);
 
-    this.material = new MeshStandardMaterial({
-      color: new Color(0, 0, 1).convertSRGBToLinear(),
-      emissive: new Color(0, 0, 0.5).convertSRGBToLinear(),
-      depthTest: false,
-    });
-    const sphere = new SphereGeometry(200, 64, 32);
-    const mesh = new Mesh(sphere, this.material);
-    this.group.add(mesh);
-
     // Small LOD sphere to display when planet gets very small.
     this.marker = new MarkerDisc(this.group, {
       radius: 0.0035,
@@ -85,7 +68,7 @@ export class Vehicle {
 
     this.label = createLabel(name, {
       nominalDistance: 1e5,
-      minDistance: 1e4,
+      minDistance: 1e3,
     });
     this.group.add(this.label);
 
@@ -102,6 +85,20 @@ export class Vehicle {
     // this.group.add(this.uArrow);
     // this.group.add(this.vArrow);
     // this.group.add(this.wArrow);
+    loader.load(
+      '/models/colliers.glb',
+      gltf => {
+        // console.log(gltf.scene.children[0]);
+        const ship = gltf.scene.children[0];
+        ship.rotateX(Math.PI * 0.5);
+        this.group.add(ship);
+      },
+      undefined,
+      error => {
+        console.log(error);
+        // reject(error);
+      }
+    );
   }
 
   public dispose() {
@@ -109,7 +106,7 @@ export class Vehicle {
     this.disposed = true;
     this.group.removeFromParent();
     this.path.dispose();
-    this.material.dispose();
+    // this.material.dispose();
     this.marker.dispose();
     this.label.removeFromParent();
     this.label.dispose();

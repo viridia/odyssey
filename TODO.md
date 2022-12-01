@@ -3,13 +3,7 @@
 * Mean anomaly not preserved after exiting numerical mode.
 * Display orbit semi-major axis (and perhaps e?)
 * Display estimated point of impact for orbit.
-* Planet orbit paths.
-  * Elliptical
-  * Transfer
 * Planetary Day Length / Offset
-* Jupiter and other planets.
-  * Need orbits.
-* Earth orbital eccentricity.
 * Milky Way
 * Axial Tilt (for planets other than earth)
 * Saturn / Rings
@@ -18,7 +12,6 @@
 * Local shadow lights
 * Don't let camera be inside planets
 * UI for selecting PoV / Focus object.
-* Rocket Elliptical Orbits.
 * Rocket transfer orbits.
 * Planet positions.
 * Earth specular map
