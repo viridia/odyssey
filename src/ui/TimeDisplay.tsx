@@ -25,7 +25,7 @@ export const TimeDisplay = () => {
       })}</div>
       <div class={styles.timeDisplay}>
         {time().toLocaleTimeString(undefined, {
-          hour12: false,
+          hourCycle: 'h23',
         })}
       </div>
     </Group>
